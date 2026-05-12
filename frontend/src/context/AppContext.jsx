@@ -253,7 +253,9 @@ export function AppProvider({ children }) {
       showToast('success', 'Account Created', `Welcome to the team, ${name}!`);
       return true;
     } catch (error) {
-      showToast('error', 'Signup failed', error.response?.data?.detail || 'Registration error');
+      const errorMsg = error.response?.data?.detail || error.message || 'Registration error';
+      showToast('error', 'Signup failed', errorMsg);
+      console.error("Signup error details:", error.response || error);
       return false;
     }
   };

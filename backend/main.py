@@ -17,6 +17,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api/health")
+async def health_check():
+    try:
+        # Check if database is accessible
+        count = await db.users.count_documents({})
+        return {"status": "healthy", "db_connected": True, "users_count": count}
+    except Exception as e:
+        import os
+        return {
+            "status": "unhealthy", 
+            "error": str(e),
+            "using_localhost": "localhost" in os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+        }
+
 # Models
 class UserRegister(BaseModel):
     name: str
