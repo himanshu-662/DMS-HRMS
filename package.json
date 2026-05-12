@@ -1,0 +1,48 @@
+{
+  "name": "react-vite-tailwind",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server:node": "node server/index.js",
+    "server": "python -m backend.main",
+    "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
+    "axios": "^1.7.9",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.5.0",
+    "clsx": "2.1.1",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^1.14.0",
+    "papaparse": "^5.5.3",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "react-dropzone": "^15.0.0",
+    "react-is": "^19.2.6",
+    "recharts": "^3.8.1",
+    "tailwind-merge": "3.4.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.17",
+    "@types/node": "22.19.17",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.1",
+    "concurrently": "^9.1.0",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3",
+    "vite": "7.3.2",
+    "vite-plugin-singlefile": "2.3.0"
+  }
+}
