@@ -6,8 +6,8 @@ import axios from 'axios';
 
 
 
-// Use Vercel's backend route prefix in production, localhost for development
-const API_URL = import.meta.env.PROD ? '/_/backend' : 'http://localhost:8000';
+// Use relative path in production for standard Vercel rewrites, localhost for development
+const API_URL = import.meta.env.PROD ? '' : 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_URL // API endpoints in main.py already include /api
