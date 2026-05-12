@@ -73,6 +73,10 @@ async def register(user: UserRegister):
     
     token = create_access_token({"sub": user.email, "role": user.role})
     
+    # Remove _id to avoid serialization error
+    if "_id" in user_dict:
+        del user_dict["_id"]
+        
     return {
         "user": {
             "id": user_dict["id"],
