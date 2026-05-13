@@ -34,6 +34,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to DMS HRMS API",
+        "health_check": "/api/health",
+        "docs": "/docs"
+    }
+
 @app.get("/api/health")
 async def health_check():
     try:
