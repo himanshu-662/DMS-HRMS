@@ -131,10 +131,23 @@ async def register(user: UserRegister):
 
 @app.post("/api/auth/login")
 async def login(credentials: UserLogin):
-    user = await db.users.find_one({"email": credentials.email, "role": credentials.role})
-    if not user or not verify_password(credentials.password, user["hashed_password"]):
+    logger.info(f"Login attempt for email: {credentials.email}, role: {credentials.role}")
+    
+    user = await db.users.find_one({"email": credentials.email})
+    
+    if not user:
+        logger.warning(f"Login failed: User not found for email {credentials.email}")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+    if user.get("role") != credentials.role:
+        logger.warning(f"Login failed: Role mismatch for {credentials.email}. Expected {user.get('role')}, got {credentials.role}")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+    if not verify_password(credentials.password, user["hashed_password"]):
+        logger.warning(f"Login failed: Password mismatch for {credentials.email}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    logger.info(f"Login successful for {credentials.email}")
     token = create_access_token({"sub": user["email"], "role": user["role"]})
     
     return {
