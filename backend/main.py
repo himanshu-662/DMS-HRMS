@@ -135,7 +135,7 @@ async def register(user: UserRegister):
 
 @app.post("/api/auth/login")
 async def login(credentials: UserLogin):
-    logger.info(f"Login attempt for email: {credentials.email}, role: {credentials.role}")
+    logger.info(f"Login attempt for email: {credentials.email}, role: {credentials.role}, password_length: {len(credentials.password)}")
     
     user = await db.users.find_one({"email": credentials.email})
     
