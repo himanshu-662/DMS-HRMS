@@ -54,7 +54,12 @@ async def seed_demo_users():
             await db.users.insert_one(user_to_insert)
             print(f"Created user: {user['email']} ({user['role']})")
         else:
-            print(f"User already exists: {user['email']}")
+            # Update password even if user exists to ensure sync
+            await db.users.update_one(
+                {"email": user["email"]},
+                {"$set": {"hashed_password": get_password_hash(user["password"]), "role": user["role"]}}
+            )
+            print(f"Updated user: {user['email']} ({user['role']})")
 
     print("\nSeed process completed!")
 
