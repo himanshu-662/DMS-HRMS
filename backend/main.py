@@ -2,12 +2,29 @@ from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict, Any
-from .database import db, init_db
-from .auth import get_password_hash, verify_password, create_access_token
+from database import db, init_db
+from auth import get_password_hash, verify_password, create_access_token
 import uuid
 from datetime import datetime
 
+import logging
+import traceback
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="DMS HRMS API")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"Global exception: {exc}")
+    logger.error(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": traceback.format_exc()},
+    )
+
+from fastapi.responses import JSONResponse
 
 app.add_middleware(
     CORSMiddleware,
