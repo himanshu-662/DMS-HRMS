@@ -11,9 +11,11 @@ import Performance from './pages/Performance';
 import Assets from './pages/Assets';
 import HelpDesk from './pages/HelpDesk';
 import Shifts from './pages/Shifts';
+import Tasks from './pages/Tasks';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
+import Notifications from './pages/Notifications';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Landing from './pages/Landing';
@@ -61,24 +63,26 @@ function AppContent() {
       case 'assets':return <Assets />;
       case 'helpdesk':return <HelpDesk />;
       case 'shifts':return <Shifts />;
+      case 'tasks':return <Tasks />;
       case 'reports':return <Reports />;
       case 'settings':return <Settings />;
       case 'profile':return <Profile />;
+      case 'notifications':return <Notifications />;
       default:return <Dashboard />;
     }
   };
 
   return (
-    <div className={cn('min-h-screen', state.darkMode ? 'dark bg-gray-900' : 'bg-gray-50')}>
+    <div className="min-h-screen dark bg-zinc-950 selection:bg-primary-500/30 selection:text-primary-200">
       <Sidebar />
       <Header />
       <main
         className={cn(
           'pt-16 transition-all duration-300 min-h-screen',
-          state.sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[260px]'
+          state.sidebarCollapsed ? 'lg:pl-[80px]' : 'lg:pl-[280px]'
         )}>
         
-        <div className="p-4 lg:p-6 max-w-[1600px] mx-auto">
+        <div className="p-4 lg:p-10 max-w-[1600px] mx-auto">
           {renderPage()}
         </div>
       </main>

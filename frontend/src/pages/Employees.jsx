@@ -7,7 +7,7 @@ import { useApp } from '../context/AppContext';
 import { cn } from '../utils/cn';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { FormInput, FormSelect, Button } from '../components/FormInput';
+import { FormInput, FormSelect, Button, FormCheckbox } from '../components/FormInput';
 
 import axios from 'axios';
 import * as XLSX from 'xlsx';
@@ -33,22 +33,20 @@ const emptyEmployee = {
   location: '',
   type: 'full_time',
   salary: 0,
-  skills: []
+  skills: [],
+  createAccount: false
 };
-
-
 
 
 export default function Employees() {
   const { state, dispatch, showToast, refreshData } = useApp();
-  const { employees, searchQuery } = state;
+  const { employees = [], searchQuery = '' } = state;
 
   const [viewMode, setViewMode] = useState('grid');
   const [filterDept, setFilterDept] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [importType, setImportType] = useState('json');
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -93,7 +91,7 @@ export default function Employees() {
     dispatch({ type: 'SET_DATA', payload: { employees: updatedEmployees } });
 
     try {
-      await axios.post(`http://localhost:8000/api/employees/update/${employeeId}`, {
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/employees/update/${employeeId}`, {
         ...employee,
         department: newDepartment
       });
@@ -109,8 +107,8 @@ export default function Employees() {
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';else
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email';
-    if (!formData.designation.trim()) newErrors.designation = 'Designation is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
+    if (!formData.designation.trim()) newErrors.designation = 'Job title is required';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -119,11 +117,12 @@ export default function Employees() {
     if (!validateForm()) return;
 
     try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       if (isEditing && selectedEmployee) {
-        await axios.post(`http://localhost:8000/api/employees/update/${selectedEmployee.id}`, formData);
+        await axios.post(`${baseUrl}/api/employees/update/${selectedEmployee.id}`, formData);
         showToast('success', 'Employee Updated', `${formData.name}'s profile has been updated.`);
       } else {
-        await axios.post('http://localhost:8000/api/employees', formData);
+        await axios.post(`${baseUrl}/api/employees`, formData);
         showToast('success', 'Employee Added', `${formData.name} has been added to the team.`);
       }
       refreshData();
@@ -149,15 +148,12 @@ export default function Employees() {
           data = JSON.parse(event.target?.result);
         } else if (type === 'csv') {
           const content = event.target?.result;
-          // Log for debugging
-          console.log("CSV Content:", content.substring(0, 200));
           const result = Papa.parse(content, {
             header: true,
             skipEmptyLines: true,
-            transformHeader: (h) => h.trim().toLowerCase() // Normalize headers to lowercase
+            transformHeader: (h) => h.trim().toLowerCase()
           });
           data = result.data;
-          console.log("Parsed Data:", data.slice(0, 2));
         } else if (type === 'excel') {
           const workbook = XLSX.read(event.target?.result, { type: 'binary' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -181,20 +177,20 @@ export default function Employees() {
           location: emp.location || emp.city || "",
           type: emp.type || "full_time",
           skills: typeof emp.skills === 'string' ? emp.skills.split(',').map((s) => s.trim()) : emp.skills || []
-        })).filter((emp) => emp.name && emp.email); // Must have name and email
+        })).filter((emp) => emp.name && emp.email);
 
         if (normalizedData.length === 0) {
-          showToast('error', 'Import Failed', 'No valid employee records found in file. Check column headers.');
+          showToast('error', 'Import Failed', 'No valid employee records found in file.');
           return;
         }
 
-        const response = await axios.post('http://localhost:8000/api/employees/bulk', normalizedData);
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const response = await axios.post(`${baseUrl}/api/employees/bulk`, normalizedData);
         showToast('success', 'Import Complete', response.data.message);
         refreshData();
         setShowImportModal(false);
       } catch (err) {
-        console.error("Import Error Details:", err);
-        showToast('error', 'Import Failed', 'Please check the file structure or console for details');
+        showToast('error', 'Import Failed', 'Please check the file structure.');
       } finally {
         setIsImporting(false);
       }
@@ -233,7 +229,7 @@ export default function Employees() {
 
   const handleEdit = (emp) => {
     setSelectedEmployee(emp);
-    setFormData({ ...emp });
+    setFormData({ ...emp, createAccount: false });
     setIsEditing(true);
     setShowAddModal(true);
   };
@@ -246,7 +242,8 @@ export default function Employees() {
   const handleDelete = async () => {
     if (selectedEmployee) {
       try {
-        await axios.delete(`http://localhost:8000/api/employees/${selectedEmployee.id}`);
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        await axios.delete(`${baseUrl}/api/employees/${selectedEmployee.id}`);
         showToast('success', 'Employee Removed', `${selectedEmployee.name} has been removed.`);
         refreshData();
         setSelectedEmployee(null);
@@ -270,182 +267,259 @@ export default function Employees() {
   };
 
   const statusColors = {
-    active: 'bg-emerald-100 text-emerald-700',
-    inactive: 'bg-gray-100 text-gray-600',
-    on_leave: 'bg-amber-100 text-amber-700',
-    terminated: 'bg-red-100 text-red-700'
+    active: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    inactive: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20',
+    on_leave: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+    terminated: 'bg-red-500/10 text-red-500 border-red-500/20'
   };
 
   const gradients = [
-  'from-blue-400 to-indigo-600', 'from-emerald-400 to-teal-600',
-  'from-violet-400 to-purple-600', 'from-rose-400 to-pink-600',
-  'from-orange-400 to-amber-600', 'from-cyan-400 to-blue-600'];
-
+    'from-blue-500 to-indigo-600', 
+    'from-emerald-500 to-teal-600',
+    'from-violet-500 to-purple-600', 
+    'from-rose-500 to-pink-600',
+    'from-orange-500 to-amber-600', 
+    'from-cyan-500 to-blue-600'
+  ];
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div className="space-y-8 animate-fade-in pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Employee Directory</h3>
-          <p className="text-sm text-gray-500">{filtered.length} of {employees.length} employees</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Employees</h1>
+          <p className="text-sm text-zinc-500 mt-1">Manage your team and their roles across the organization.</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="secondary" icon={<Upload className="w-4 h-4" />} onClick={() => setShowImportModal(true)}>Import</Button>
-          <Button variant="secondary" icon={<Download className="w-4 h-4" />} onClick={exportToCSV}>Export</Button>
-          <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>Add Employee</Button>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-xs font-bold px-4" icon={<Upload className="w-4 h-4" />} onClick={() => setShowImportModal(true)}>Import</Button>
+          <Button variant="ghost" className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-xs font-bold px-4" icon={<Download className="w-4 h-4" />} onClick={exportToCSV}>Export</Button>
+          <Button className="bg-primary-600 hover:bg-primary-500 text-xs font-bold px-6 shadow-lg shadow-primary-900/20" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>Add Employee</Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or ID..."
-              value={searchQuery}
-              onChange={(e) => dispatch({ type: 'SET_SEARCH', payload: e.target.value })}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:bg-white transition-all" />
-            
-          </div>
-          <div className="flex items-center bg-gray-100 rounded-xl p-0.5">
-            <button onClick={() => setViewMode('grid')} className={cn('p-2 rounded-lg transition-colors', viewMode === 'grid' ? 'bg-white shadow text-primary-600' : 'text-gray-400 hover:text-gray-600')}><Grid3X3 className="w-4 h-4" /></button>
-            <button onClick={() => setViewMode('list')} className={cn('p-2 rounded-lg transition-colors', viewMode === 'list' ? 'bg-white shadow text-primary-600' : 'text-gray-400 hover:text-gray-600')}><List className="w-4 h-4" /></button>
-            <button onClick={() => setViewMode('group')} className={cn('p-2 rounded-lg transition-colors', viewMode === 'group' ? 'bg-white shadow text-primary-600' : 'text-gray-400 hover:text-gray-600')}><LayoutGrid className="w-4 h-4" /></button>
-          </div>
+      {/* Filter Bar */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-primary-500 transition-colors" />
+          <input
+            type="text"
+            placeholder="Search by name, email, or ID..."
+            value={searchQuery}
+            onChange={(e) => dispatch({ type: 'SET_SEARCH', payload: e.target.value })}
+            className="w-full pl-11 pr-4 py-3 bg-zinc-900 rounded-xl text-sm font-medium border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/50 transition-all text-white" />
+        </div>
+        
+        <div className="flex items-center gap-2 bg-zinc-900 rounded-xl p-1 border border-zinc-800">
+          <button onClick={() => setViewMode('grid')} className={cn('p-2.5 rounded-lg transition-all', viewMode === 'grid' ? 'bg-zinc-800 text-primary-400' : 'text-zinc-500 hover:text-zinc-300')}><Grid3X3 className="w-4 h-4" /></button>
+          <button onClick={() => setViewMode('list')} className={cn('p-2.5 rounded-lg transition-all', viewMode === 'list' ? 'bg-zinc-800 text-primary-400' : 'text-zinc-500 hover:text-zinc-300')}><List className="w-4 h-4" /></button>
+          <button onClick={() => setViewMode('group')} className={cn('p-2.5 rounded-lg transition-all', viewMode === 'group' ? 'bg-zinc-800 text-primary-400' : 'text-zinc-500 hover:text-zinc-300')}><LayoutGrid className="w-4 h-4" /></button>
         </div>
       </div>
 
       {viewMode === 'grid' &&
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((emp, idx) =>
-        <div key={emp.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:shadow-gray-100/50 transition-all group">
-              <div className={`h-20 bg-gradient-to-r ${gradients[idx % gradients.length]} relative`}>
-                <div className="absolute -bottom-6 left-4">
-                  <div className="w-14 h-14 rounded-2xl bg-white p-0.5 shadow-lg">
-                    <div className={`w-full h-full rounded-xl bg-gradient-to-br ${gradients[idx % gradients.length]} flex items-center justify-center text-white text-lg font-bold`}>{emp.name.split(' ').map((n) => n[0]).join('')}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filtered.map((emp, idx) => (
+            <div key={emp.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 hover:border-zinc-700 transition-all group overflow-hidden flex flex-col">
+              <div className={`h-2 bg-gradient-to-r ${gradients[idx % gradients.length]}`} />
+              <div className="p-6 flex-1">
+                <div className="flex justify-between items-start mb-6">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradients[idx % gradients.length]} flex items-center justify-center text-white text-lg font-bold shadow-lg`}>
+                    {emp.name.split(' ').map((n) => n[0]).join('')}
+                  </div>
+                  <div className={cn("text-[10px] font-bold px-2 py-1 rounded-md border", statusColors[emp.status] || 'bg-zinc-800 text-zinc-400 border-zinc-800')}>
+                    {emp.status.replace('_', ' ').toUpperCase()}
                   </div>
                 </div>
-                <span className={`absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusColors[emp.status]}`}>{emp.status.replace('_', ' ').toUpperCase()}</span>
+                
+                <h4 className="text-base font-bold text-white group-hover:text-primary-400 transition-colors">{emp.name}</h4>
+                <p className="text-xs text-zinc-500 mt-1 font-medium">{emp.designation}</p>
+                
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center gap-3 text-xs text-zinc-400 font-medium">
+                    <Building2 className="w-4 h-4 text-zinc-600" />
+                    {emp.department}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-zinc-400 font-medium">
+                    <Mail className="w-4 h-4 text-zinc-600" />
+                    <span className="truncate">{emp.email}</span>
+                  </div>
+                </div>
               </div>
-              <div className="pt-8 px-4 pb-4">
-                <h4 className="text-sm font-semibold text-gray-900">{emp.name}</h4>
-                <p className="text-xs text-gray-500">{emp.designation}</p>
-                <div className="mt-3 space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs text-gray-500"><Building2 className="w-3.5 h-3.5" /> {emp.department}</div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500"><MapPin className="w-3.5 h-3.5" /> {emp.location}</div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500"><Mail className="w-3.5 h-3.5" /> <span className="truncate">{emp.email}</span></div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">{emp.employeeId}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleView(emp)} className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-primary-600"><Eye className="w-4 h-4" /></button>
-                    <button onClick={() => handleEdit(emp)} className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-primary-600"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => {setSelectedEmployee(emp);setShowDeleteConfirm(true);}} className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-danger-600"><Trash2 className="w-4 h-4" /></button>
-                  </div>
+              
+              <div className="px-6 py-4 bg-zinc-900/50 border-t border-zinc-800 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase">{emp.employeeId}</span>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button onClick={() => handleView(emp)} className="p-2 text-zinc-500 hover:text-white transition-colors"><Eye className="w-4 h-4" /></button>
+                  <button onClick={() => handleEdit(emp)} className="p-2 text-zinc-500 hover:text-white transition-colors"><Edit className="w-4 h-4" /></button>
+                  <button onClick={() => {setSelectedEmployee(emp); setShowDeleteConfirm(true);}} className="p-2 text-zinc-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             </div>
-        )}
+          ))}
         </div>
       }
 
       {viewMode === 'group' &&
-      <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex gap-6 overflow-x-auto pb-6 h-[calc(100vh-280px)] min-h-[500px]">
-            {departments.map((dept, deptIdx) =>
-          <div key={dept} className="flex-shrink-0 w-80 flex flex-col gap-4">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex gap-6 overflow-x-auto pb-6 h-[calc(100vh-320px)] min-h-[500px]">
+            {departments.map((dept, deptIdx) => (
+              <div key={dept} className="flex-shrink-0 w-80 flex flex-col gap-4">
                 <div className="flex items-center justify-between px-2">
                   <div className="flex items-center gap-2">
-                    <div className={cn("w-2 h-2 rounded-full", `bg-gradient-to-br ${gradients[deptIdx % gradients.length]}`)} />
-                    <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">{dept}</h4>
+                    <div className={cn("w-2 h-2 rounded-full", `bg-gradient-to-r ${gradients[deptIdx % gradients.length]}`)} />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">{dept}</h4>
                   </div>
-                  <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{groupedEmployees[dept].length}</span>
+                  <span className="text-xs font-bold text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-800">{groupedEmployees[dept].length}</span>
                 </div>
+                
                 <Droppable droppableId={dept}>
-                  {(provided, snapshot) =>
-              <div {...provided.droppableProps} ref={provided.innerRef} className={cn("flex-1 p-2 rounded-2xl border-2 border-dashed transition-all space-y-3 overflow-y-auto", snapshot.isDraggingOver ? "bg-primary-50/50 border-primary-200" : "bg-gray-50/30 border-transparent")}>
-                      {groupedEmployees[dept].map((emp, index) =>
-                <Draggable key={emp.id} draggableId={emp.id} index={index}>
-                          {(provided, snapshot) =>
-                  <div ref={provided.innerRef} {...provided.draggableProps} className={cn("bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-shadow", snapshot.isDragging ? "shadow-xl ring-2 ring-primary-500/20 rotate-1" : "hover:shadow-md")}>
-                              <div className="flex items-center justify-between mb-3">
+                  {(provided, snapshot) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className={cn("flex-1 p-3 rounded-2xl border-2 border-dashed transition-all space-y-3 overflow-y-auto", snapshot.isDraggingOver ? "bg-zinc-900 border-primary-500/30" : "bg-zinc-950/50 border-zinc-900")}>
+                      {groupedEmployees[dept].map((emp, index) => (
+                        <Draggable key={emp.id} draggableId={emp.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div ref={provided.innerRef} {...provided.draggableProps} className={cn("bg-zinc-900 p-4 rounded-xl border border-zinc-800 shadow-sm transition-all relative group", snapshot.isDragging ? "shadow-2xl ring-2 ring-primary-500/40 bg-zinc-800 scale-105" : "hover:border-zinc-700")}>
+                              <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold bg-gradient-to-br", gradients[index % gradients.length])}>{emp.name.split(' ').map((n) => n[0]).join('')}</div>
-                                  <div><p className="text-xs font-bold text-gray-900">{emp.name}</p><p className="text-[10px] text-gray-500">{emp.designation}</p></div>
+                                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold", gradients[index % gradients.length])}>
+                                    {emp.name.split(' ').map((n) => n[0]).join('')}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-white">{emp.name}</p>
+                                    <p className="text-[10px] text-zinc-500 font-medium">{emp.designation}</p>
+                                  </div>
                                 </div>
-                                <div {...provided.dragHandleProps} className="p-1 hover:bg-gray-100 rounded text-gray-400 cursor-grab active:cursor-grabbing"><GripVertical className="w-3.5 h-3.5" /></div>
-                              </div>
-                              <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
-                                <span className="text-[10px] font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">{emp.employeeId}</span>
-                                <div className="flex items-center gap-1">
-                                  <button onClick={() => handleView(emp)} className="w-6 h-6 rounded-md hover:bg-gray-50 flex items-center justify-center text-gray-400 hover:text-primary-600"><Eye className="w-3 h-3" /></button>
-                                  <button onClick={() => handleEdit(emp)} className="w-6 h-6 rounded-md hover:bg-gray-50 flex items-center justify-center text-gray-400 hover:text-primary-600"><Edit className="w-3 h-3" /></button>
-                                </div>
+                                <div {...provided.dragHandleProps} className="text-zinc-700 hover:text-zinc-500"><GripVertical className="w-4 h-4" /></div>
                               </div>
                             </div>
-                  }
+                          )}
                         </Draggable>
-                )}
+                      ))}
                       {provided.placeholder}
                     </div>
-              }
+                  )}
                 </Droppable>
               </div>
-          )}
+            ))}
           </div>
         </DragDropContext>
       }
 
-      <Modal isOpen={showImportModal} onClose={handleCloseModal} title="Import Employees" subtitle="Bulk add employees using various formats" size="lg">
-        <div className="p-8 space-y-6">
-          <div {...getRootProps()} className={cn("border-3 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer group", isDragActive ? "border-primary-500 bg-primary-50 scale-[0.99]" : "border-gray-100 hover:border-primary-400 hover:bg-gray-50")}>
+      {/* Import Modal */}
+      <Modal isOpen={showImportModal} onClose={handleCloseModal} title="Import Employees" subtitle="Upload a file to add multiple employees at once." size="md">
+        <div className="p-6 space-y-6">
+          <div {...getRootProps()} className={cn("border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer", isDragActive ? "border-primary-500 bg-primary-500/5" : "border-zinc-800 hover:border-zinc-700 bg-zinc-950")}>
             <input {...getInputProps()} />
-            <div className="w-20 h-20 rounded-2xl bg-white shadow-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-              <FileUp className={cn("w-10 h-10 transition-colors", isDragActive ? "text-primary-600" : "text-gray-400 group-hover:text-primary-500")} />
+            <div className="w-16 h-16 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <FileUp className={cn("w-8 h-8", isDragActive ? "text-primary-400" : "text-zinc-600")} />
             </div>
-            <h4 className="text-xl font-bold text-gray-900">{isDragActive ? "Drop the file here" : "Drag & Drop File"}</h4>
-            <p className="text-sm text-gray-500 mt-2 max-w-xs mx-auto">Upload <strong>JSON, CSV, or Excel</strong> files directly to onboard your team</p>
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <span className="px-3 py-1 bg-white rounded-lg text-[10px] font-bold text-gray-400 shadow-sm border border-gray-100">.JSON</span>
-              <span className="px-3 py-1 bg-white rounded-lg text-[10px] font-bold text-gray-400 shadow-sm border border-gray-100">.CSV</span>
-              <span className="px-3 py-1 bg-white rounded-lg text-[10px] font-bold text-gray-400 shadow-sm border border-gray-100">.XLSX</span>
-            </div>
+            <h4 className="text-lg font-bold text-white">{isDragActive ? "Drop the file here" : "Upload File"}</h4>
+            <p className="text-xs text-zinc-500 mt-2">Support for JSON, CSV, and Excel formats.</p>
           </div>
-          <div className="bg-blue-50 rounded-2xl p-4 flex gap-3"><AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0" /><div><p className="text-sm font-semibold text-blue-900">Automatic Detection</p><p className="text-xs text-blue-700 mt-0.5">We'll automatically detect the file format and map headers like <strong>name, email, and department</strong>.</p></div></div>
-          {isImporting && <div className="text-center py-4"><div className="w-8 h-8 border-3 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" /><p className="text-sm font-medium text-gray-600">Processing your team data...</p></div>}
+          
+          {isImporting && (
+            <div className="text-center py-4">
+              <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs text-zinc-500 font-bold">Importing employees...</p>
+            </div>
+          )}
         </div>
       </Modal>
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={showAddModal} onClose={handleCloseModal} title={isEditing ? 'Edit Employee' : 'Add New Employee'} subtitle={isEditing ? 'Update employee information' : 'Fill in the details to add a new team member'} size="lg" footer={<><Button variant="ghost" onClick={handleCloseModal}>Cancel</Button><Button onClick={handleSubmit}>{isEditing ? 'Update' : 'Add Employee'}</Button></>}>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4"><FormInput label="Full Name" value={formData.name} onChange={(v) => setFormData({ ...formData, name: v })} placeholder="John Doe" required error={errors.name} /><FormInput label="Email" type="email" value={formData.email} onChange={(v) => setFormData({ ...formData, email: v })} placeholder="john@dms.com" required error={errors.email} /></div>
-          <div className="grid grid-cols-2 gap-4"><FormInput label="Phone" value={formData.phone} onChange={(v) => setFormData({ ...formData, phone: v })} placeholder="+1-555-0000" required error={errors.phone} /><FormInput label="Location" value={formData.location} onChange={(v) => setFormData({ ...formData, location: v })} placeholder="San Francisco" /></div>
-          <div className="grid grid-cols-2 gap-4"><FormSelect label="Department" value={formData.department} onChange={(v) => setFormData({ ...formData, department: v })} options={departments.map((d) => ({ value: d, label: d }))} /><FormInput label="Designation" value={formData.designation} onChange={(v) => setFormData({ ...formData, designation: v })} placeholder="Software Engineer" required error={errors.designation} /></div>
-          <div className="grid grid-cols-2 gap-4"><FormSelect label="Employment Type" value={formData.type} onChange={(v) => setFormData({ ...formData, type: v })} options={[{ value: 'full_time', label: 'Full Time' }, { value: 'part_time', label: 'Part Time' }, { value: 'contract', label: 'Contract' }, { value: 'intern', label: 'Intern' }]} /><FormInput label="Join Date" type="date" value={formData.joinDate} onChange={(v) => setFormData({ ...formData, joinDate: v })} /></div>
-          <div className="grid grid-cols-2 gap-4"><FormInput label="Manager" value={formData.manager} onChange={(v) => setFormData({ ...formData, manager: v })} placeholder="Manager name" /><FormInput label="Salary" type="number" value={formData.salary} onChange={(v) => setFormData({ ...formData, salary: Number(v) })} placeholder="75000" /></div>
+      <Modal isOpen={showAddModal} onClose={handleCloseModal} title={isEditing ? 'Edit Employee' : 'Add New Employee'} subtitle={isEditing ? 'Update employee details.' : 'Fill in the details to add a new employee.'} size="lg" footer={<><Button variant="ghost" className="px-6" onClick={handleCloseModal}>Cancel</Button><Button className="bg-primary-600 px-8" onClick={handleSubmit}>{isEditing ? 'Save Changes' : 'Add Employee'}</Button></>}>
+        <div className="space-y-6 p-2">
+          <div className="grid grid-cols-2 gap-6">
+            <FormInput label="Full Name" value={formData.name} onChange={(v) => setFormData({ ...formData, name: v })} placeholder="e.g. John Doe" required error={errors.name} />
+            <FormInput label="Email Address" type="email" value={formData.email} onChange={(v) => setFormData({ ...formData, email: v })} placeholder="e.g. john@company.com" required error={errors.email} />
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <FormInput label="Phone Number" value={formData.phone} onChange={(v) => setFormData({ ...formData, phone: v })} placeholder="e.g. +1 234 567 890" required error={errors.phone} />
+            <FormInput label="Location" value={formData.location} onChange={(v) => setFormData({ ...formData, location: v })} placeholder="e.g. New York, NY" />
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <FormSelect label="Department" value={formData.department} onChange={(v) => setFormData({ ...formData, department: v })} options={departments.map((d) => ({ value: d, label: d }))} />
+            <FormInput label="Job Title" value={formData.designation} onChange={(v) => setFormData({ ...formData, designation: v })} placeholder="e.g. Software Engineer" required error={errors.designation} />
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <FormSelect label="Employment Type" value={formData.type} onChange={(v) => setFormData({ ...formData, type: v })} options={[{ value: 'full_time', label: 'Full Time' }, { value: 'part_time', label: 'Part Time' }, { value: 'contract', label: 'Contract' }, { value: 'intern', label: 'Intern' }]} />
+            <FormInput label="Joining Date" type="date" value={formData.joinDate} onChange={(v) => setFormData({ ...formData, joinDate: v })} />
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <FormSelect 
+              label="Reporting Manager" 
+              value={formData.manager} 
+              onChange={(v) => setFormData({ ...formData, manager: v })} 
+              options={[
+                { value: '', label: 'None (Top Level)' },
+                ...employees.filter(e => e.status === 'active' && e.id !== selectedEmployee?.id).map(e => ({
+                  value: e.name,
+                  label: e.name.toUpperCase()
+                }))
+              ]}
+            />
+            <FormInput label="Annual Salary" type="number" value={formData.salary} onChange={(v) => setFormData({ ...formData, salary: Number(v) })} placeholder="e.g. 50000" />
+          </div>
+          {!isEditing && (
+            <div className="pt-6 border-t border-zinc-800">
+              <FormCheckbox 
+                label="Create login account" 
+                description="Automatically create a login account for this employee. The email will be used as the default password."
+                checked={formData.createAccount}
+                onChange={(v) => setFormData({ ...formData, createAccount: v })}
+              />
+            </div>
+          )}
         </div>
       </Modal>
 
       {/* View Modal */}
-      <Modal isOpen={showViewModal} onClose={handleCloseModal} title="Employee Details" size="lg" footer={<><Button variant="ghost" onClick={handleCloseModal}>Close</Button><Button onClick={() => {handleCloseModal();if (selectedEmployee) handleEdit(selectedEmployee);}}>Edit</Button></>}>
-        {selectedEmployee &&
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-2xl font-bold">{selectedEmployee.name.split(' ').map((n) => n[0]).join('')}</div>
-              <div><h3 className="text-xl font-bold text-gray-900">{selectedEmployee.name}</h3><p className="text-sm text-gray-500">{selectedEmployee.designation} · {selectedEmployee.employeeId}</p><span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${statusColors[selectedEmployee.status]}`}>{selectedEmployee.status.replace('_', ' ').toUpperCase()}</span></div>
+      <Modal isOpen={showViewModal} onClose={handleCloseModal} title="Employee Details" size="lg" footer={<><Button variant="ghost" className="px-6" onClick={handleCloseModal}>Close</Button><Button className="bg-primary-600 px-8" onClick={() => {handleCloseModal(); if (selectedEmployee) handleEdit(selectedEmployee);}}>Edit Profile</Button></>}>
+        {selectedEmployee && (
+          <div className="space-y-8 py-4">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-2xl bg-primary-600 flex items-center justify-center text-white text-3xl font-bold shadow-xl">
+                {selectedEmployee.name.split(' ').map((n) => n[0]).join('')}
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white">{selectedEmployee.name}</h3>
+                <p className="text-sm text-zinc-500 mt-1 font-medium">{selectedEmployee.designation} · {selectedEmployee.employeeId}</p>
+                <div className={cn("text-[10px] font-bold px-3 py-1 rounded-md mt-4 inline-block border", statusColors[selectedEmployee.status] || 'bg-zinc-800 text-zinc-400 border-zinc-800')}>
+                  {selectedEmployee.status.replace('_', ' ').toUpperCase()}
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[{ label: 'Email', value: selectedEmployee.email }, { label: 'Phone', value: selectedEmployee.phone }, { label: 'Department', value: selectedEmployee.department }, { label: 'Location', value: selectedEmployee.location }, { label: 'Manager', value: selectedEmployee.manager || 'N/A' }, { label: 'Type', value: 'Full Time' }, { label: 'Join Date', value: new Date(selectedEmployee.joinDate).toLocaleDateString() }, { label: 'Salary', value: `$${selectedEmployee.salary.toLocaleString()}` }].map((item) =>
-            <div key={item.label} className="p-3 rounded-xl bg-gray-50"><p className="text-[11px] text-gray-400 font-medium uppercase">{item.label}</p><p className="text-sm font-medium text-gray-900 mt-0.5">{item.value}</p></div>
-            )}
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Email Address', value: selectedEmployee.email },
+                { label: 'Phone', value: selectedEmployee.phone },
+                { label: 'Department', value: selectedEmployee.department },
+                { label: 'Location', value: selectedEmployee.location || 'Remote' },
+                { label: 'Reporting To', value: selectedEmployee.manager || 'N/A' },
+                { label: 'Employment', value: selectedEmployee.type.replace('_', ' ') },
+                { label: 'Joined On', value: new Date(selectedEmployee.joinDate).toLocaleDateString() },
+                { label: 'Salary', value: `$${selectedEmployee.salary.toLocaleString()}` }
+              ].map((item) => (
+                <div key={item.label} className="p-4 rounded-xl bg-zinc-950 border border-zinc-800">
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{item.label}</p>
+                  <p className="text-sm font-bold text-white mt-2 truncate">{item.value}</p>
+                </div>
+              ))}
             </div>
           </div>
-        }
+        )}
       </Modal>
 
-      <ConfirmDialog isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="Delete Employee" message={`Are you sure you want to remove ${selectedEmployee?.name}? This action cannot be undone.`} type="danger" confirmText="Delete" />
-    </div>);
-
+      <ConfirmDialog 
+        isOpen={showDeleteConfirm} 
+        onClose={() => setShowDeleteConfirm(false)} 
+        onConfirm={handleDelete} 
+        title="Delete Employee" 
+        message={`Are you sure you want to remove ${selectedEmployee?.name}? This action cannot be undone.`} 
+        type="danger" 
+        confirmText="Remove Employee" 
+      />
+    </div>
+  );
 }

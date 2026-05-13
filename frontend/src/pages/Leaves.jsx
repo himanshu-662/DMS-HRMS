@@ -10,7 +10,7 @@ import { FormInput, FormSelect, FormTextarea, Button } from '../components/FormI
 
 export default function Leaves() {
   const { state, dispatch, showToast } = useApp();
-  const { leaveRequests, leaveBalances, currentUser } = state;
+  const { leaveRequests = [], leaveBalances = [], currentUser = null } = state;
 
   const [activeTab, setActiveTab] = useState('requests');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -19,7 +19,8 @@ export default function Leaves() {
     type: 'casual',
     startDate: '',
     endDate: '',
-    reason: ''
+    reason: '',
+    employeeName: currentUser?.name || ''
   });
   const [errors, setErrors] = useState({});
 
@@ -59,8 +60,8 @@ export default function Leaves() {
     const days = calculateDays(formData.startDate, formData.endDate);
     const newRequest = {
       id: `l${Date.now()}`,
-      employeeId: currentUser?.id || '',
-      employeeName: currentUser?.name || '',
+      employeeId: state.employees.find(e => e.name === formData.employeeName)?.id || currentUser?.id || '',
+      employeeName: formData.employeeName || currentUser?.name || '',
       type: formData.type,
       startDate: formData.startDate,
       endDate: formData.endDate,
@@ -68,10 +69,10 @@ export default function Leaves() {
       reason: formData.reason,
       status: 'pending',
       appliedOn: new Date().toISOString().split('T')[0],
-      department: currentUser?.department || ''
+      department: state.employees.find(e => e.name === formData.employeeName)?.department || currentUser?.department || ''
     };
 
-    dispatch({ type: 'ADD_LEAVE_REQUEST', payload: newRequest });
+    dispatch({ type: 'ADD_LEAVE', payload: newRequest });
     dispatch({
       type: 'ADD_NOTIFICATION',
       payload: {
@@ -99,212 +100,220 @@ export default function Leaves() {
 
   const handleCloseModal = () => {
     setShowApplyModal(false);
-    setFormData({ type: 'casual', startDate: '', endDate: '', reason: '' });
+    setFormData({ type: 'casual', startDate: '', endDate: '', reason: '', employeeName: currentUser?.name || '' });
     setErrors({});
   };
 
   const statusConfig = {
-    pending: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-    approved: { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    rejected: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' }
+    pending: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+    approved: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+    rejected: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' }
   };
 
   const typeColors = {
-    casual: 'bg-blue-100 text-blue-700',
-    sick: 'bg-red-100 text-red-700',
-    earned: 'bg-green-100 text-green-700',
-    paid: 'bg-violet-100 text-violet-700',
-    unpaid: 'bg-gray-100 text-gray-700',
-    wfh: 'bg-cyan-100 text-cyan-700',
-    compensatory: 'bg-orange-100 text-orange-700'
+    casual: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    sick: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    earned: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    paid: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+    unpaid: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+    wfh: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+    compensatory: 'bg-orange-500/10 text-orange-400 border-orange-500/20'
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
-            <Clock className="w-6 h-6 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
-            <p className="text-sm text-gray-500">Pending Requests</p>
-          </div>
+    <div className="space-y-8 animate-fade-in pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Leave Management</h1>
+          <p className="text-sm text-zinc-500 mt-1">Manage leave requests and track time-off balances.</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
-            <p className="text-sm text-gray-500">Approved</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
-            <XCircle className="w-6 h-6 text-red-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{stats.rejected}</p>
-            <p className="text-sm text-gray-500">Rejected</p>
-          </div>
-        </div>
+        <Button 
+          className="h-11 px-6 rounded-xl text-xs font-bold bg-primary-600 hover:bg-primary-500 border-0" 
+          icon={<Plus className="w-4 h-4" />} 
+          onClick={() => setShowApplyModal(true)}>
+          Apply for Leave
+        </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-2xl border border-gray-100">
-        <div className="flex items-center justify-between px-5 pt-4 border-b border-gray-100">
-          <div className="flex items-center gap-1">
-            {['requests', 'balances', 'calendar'].map((tab) =>
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                'px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors border-b-2 -mb-px',
-                activeTab === tab ?
-                'border-primary-600 text-primary-600 bg-primary-50/50' :
-                'border-transparent text-gray-500 hover:text-gray-700'
-              )}>
-              
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            )}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {[
+          { label: 'Pending Approval', value: stats.pending, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+          { label: 'Approved', value: stats.approved, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+          { label: 'Rejected', value: stats.rejected, icon: XCircle, color: 'text-rose-400', bg: 'bg-rose-500/10' }
+        ].map((stat) => (
+          <div key={stat.label} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 flex items-center gap-5">
+            <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center`}>
+              <stat.icon className={`w-6 h-6 ${stat.color}`} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-white">{stat.value}</p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-1">{stat.label}</p>
+            </div>
           </div>
-          <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowApplyModal(true)} size="sm">
-            Apply Leave
-          </Button>
-        </div>
+        ))}
+      </div>
 
-        {/* Requests Tab */}
-        {activeTab === 'requests' &&
-        <div>
-            <div className="px-5 py-3 flex items-center gap-2 border-b border-gray-50">
-              <select
+      {/* Tabs and Filters */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-zinc-900 p-1 rounded-xl border border-zinc-800 inline-flex">
+            {['requests', 'balances', 'holidays'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'px-6 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all',
+                  activeTab === tab ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
+                )}>
+                {tab}
+              </button>
+            ))}
+          </div>
+          
+          {activeTab === 'requests' && (
+            <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 bg-gray-50 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary-500/30">
-              
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {filtered.length === 0 ?
-            <div className="p-12 text-center">
-                  <CalendarDays className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm text-gray-500">No leave requests found</p>
-                </div> :
+              className="px-4 py-2.5 bg-zinc-900 rounded-xl text-xs font-bold border border-zinc-800 text-white focus:outline-none focus:ring-1 focus:ring-primary-500">
+              <option value="all">Status: All</option>
+              <option value="pending">Status: Pending</option>
+              <option value="approved">Status: Approved</option>
+              <option value="rejected">Status: Rejected</option>
+            </select>
+          )}
+        </div>
 
-            filtered.map((leave) => {
-              const config = statusConfig[leave.status];
-              const StatusIcon = config.icon;
-              return (
-                <div key={leave.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+        {/* Requests List */}
+        {activeTab === 'requests' && (
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
+            <div className="divide-y divide-zinc-800">
+              {filtered.length === 0 ? (
+                <div className="p-20 text-center">
+                  <CalendarDays className="w-12 h-12 text-zinc-800 mx-auto mb-4" />
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">No leave requests found</p>
+                </div>
+              ) : (
+                filtered.map((leave) => {
+                  const config = statusConfig[leave.status] || statusConfig.pending;
+                  const StatusIcon = config.icon;
+                  return (
+                    <div key={leave.id} className="flex flex-col md:flex-row md:items-center gap-6 px-6 py-6 hover:bg-zinc-800/30 transition-all group">
+                      <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 text-sm font-bold flex-shrink-0">
                         {leave.employeeName.split(' ').map((n) => n[0]).join('')}
                       </div>
+                      
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-gray-900">{leave.employeeName}</p>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${typeColors[leave.type]}`}>
-                            {leave.type.replace('_', ' ').toUpperCase()}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <p className="text-sm font-bold text-white group-hover:text-primary-400 transition-colors">{leave.employeeName}</p>
+                          <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider", typeColors[leave.type] || typeColors.casual)}>
+                            {leave.type}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {leave.days} day{leave.days > 1 ? 's' : ''}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{leave.reason}</p>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <div className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold', config.bg, config.color)}>
-                          <StatusIcon className="w-3.5 h-3.5" />
-                          {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                        <div className="flex items-center gap-4 mt-1.5">
+                          <p className="text-[10px] font-bold text-zinc-500 uppercase">
+                            {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                          </p>
+                          <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                          <p className="text-[10px] font-bold text-primary-400 uppercase tracking-wider">{leave.days} Days</p>
                         </div>
-                        {leave.status === 'pending' &&
-                    <div className="flex items-center gap-1">
-                            <button
-                        onClick={() => handleApprove(leave.id)}
-                        className="w-8 h-8 rounded-xl bg-success-50 text-success-600 flex items-center justify-center hover:bg-success-500 hover:text-white transition-colors">
+                        <p className="text-xs text-zinc-500 mt-2 max-w-2xl">{leave.reason}</p>
+                      </div>
+
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        <div className={cn('flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border', config.bg, config.color, config.border)}>
+                          <StatusIcon className="w-3.5 h-3.5" />
+                          {leave.status}
+                        </div>
                         
-                              <CheckCircle2 className="w-4 h-4" />
+                        {leave.status === 'pending' && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleApprove(leave.id)}
+                              className="w-9 h-9 rounded-lg bg-zinc-950 border border-zinc-800 text-emerald-500 flex items-center justify-center hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all">
+                              <CheckCircle2 className="w-4.5 h-4.5" />
                             </button>
                             <button
-                        onClick={() => handleReject(leave.id)}
-                        className="w-8 h-8 rounded-xl bg-danger-50 text-danger-600 flex items-center justify-center hover:bg-danger-500 hover:text-white transition-colors">
-                        
-                              <XCircle className="w-4 h-4" />
+                              onClick={() => handleReject(leave.id)}
+                              className="w-9 h-9 rounded-lg bg-zinc-950 border border-zinc-800 text-rose-500 flex items-center justify-center hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all">
+                              <XCircle className="w-4.5 h-4.5" />
                             </button>
                           </div>
-                    }
+                        )}
                       </div>
-                    </div>);
-
-            })
-            }
-            </div>
-          </div>
-        }
-
-        {/* Balances Tab */}
-        {activeTab === 'balances' &&
-        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {leaveBalances.map((balance) => {
-            const usedPercentage = balance.used / balance.total * 100;
-            return (
-              <div key={balance.type} className="border border-gray-100 rounded-2xl p-4 hover:shadow-md transition-all">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-gray-900">{balance.type}</h4>
-                    <span className="text-xs text-gray-400">{balance.used}/{balance.total} used</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
-                    <div
-                    className={cn(
-                      'h-2 rounded-full transition-all',
-                      usedPercentage > 80 ? 'bg-red-500' : usedPercentage > 50 ? 'bg-amber-500' : 'bg-primary-500'
-                    )}
-                    style={{ width: `${usedPercentage}%` }} />
-                  
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-primary-600">{balance.remaining}</span>
-                    <span className="text-xs text-gray-500">days remaining</span>
-                  </div>
-                </div>);
-
-          })}
-          </div>
-        }
-
-        {/* Calendar Tab */}
-        {activeTab === 'calendar' &&
-        <div className="p-5">
-            <div className="bg-gray-50 rounded-2xl p-6 text-center">
-              <CalendarDays className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-700">Holiday Calendar 2024</h3>
-              <p className="text-xs text-gray-500 mt-1 mb-4">View upcoming holidays and team availability</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-left max-w-2xl mx-auto">
-                {[
-              { date: 'Jan 1', name: "New Year's Day" },
-              { date: 'Jan 15', name: 'Martin Luther King Jr. Day' },
-              { date: 'Feb 19', name: "Presidents' Day" },
-              { date: 'May 27', name: 'Memorial Day' },
-              { date: 'Jul 4', name: 'Independence Day' },
-              { date: 'Sep 2', name: 'Labor Day' },
-              { date: 'Nov 28', name: 'Thanksgiving Day' },
-              { date: 'Dec 25', name: 'Christmas Day' }].
-              map((h) =>
-              <div key={h.date} className="bg-white rounded-xl p-3 border border-gray-100">
-                    <p className="text-xs font-bold text-primary-600">{h.date}</p>
-                    <p className="text-xs text-gray-600 mt-0.5">{h.name}</p>
-                  </div>
+                    </div>
+                  );
+                })
               )}
-              </div>
             </div>
           </div>
-        }
+        )}
+
+        {/* Balances List */}
+        {activeTab === 'balances' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {leaveBalances.map((balance, idx) => {
+              const types = [
+                { key: 'annual', label: 'Annual leave', total: 20, color: 'bg-primary-500' },
+                { key: 'sick', label: 'Sick leave', total: 12, color: 'bg-rose-500' },
+                { key: 'casual', label: 'Casual leave', total: 8, color: 'bg-amber-500' },
+              ];
+              const empName = leaveRequests.find((l) => l.employeeId === balance.employeeId)?.employeeName
+                || `Employee ${idx + 1}`;
+              return (
+                <div key={balance.employeeId} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 hover:border-zinc-700 transition-all space-y-5">
+                  <p className="text-sm font-bold text-white">{empName}</p>
+                  {types.map((t) => {
+                    const remaining = balance[t.key] ?? 0;
+                    const used = t.total - remaining;
+                    const pct = Math.min((used / t.total) * 100, 100);
+                    return (
+                      <div key={t.key}>
+                        <div className="flex justify-between mb-1.5">
+                          <span className="text-xs text-zinc-400">{t.label}</span>
+                          <span className="text-xs font-bold text-white">{remaining} <span className="text-zinc-600 font-normal">/ {t.total} days</span></span>
+                        </div>
+                        <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                          <div className={`h-full rounded-full transition-all duration-700 ${t.color}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Holiday Calendar */}
+        {activeTab === 'holidays' && (
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-8 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-primary-600/10 border border-primary-500/20 flex items-center justify-center mx-auto mb-6">
+              <CalendarDays className="w-8 h-8 text-primary-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Public Holidays 2024</h3>
+            <p className="text-xs text-zinc-500 mt-2 mb-10">Company-wide holidays and observances.</p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
+              {[
+                { date: 'Jan 01', name: "New Year's Day" },
+                { date: 'Jan 15', name: 'MLK Day' },
+                { date: 'Feb 19', name: "Presidents' Day" },
+                { date: 'May 27', name: 'Memorial Day' },
+                { date: 'Jul 04', name: 'Independence Day' },
+                { date: 'Sep 02', name: 'Labor Day' },
+                { date: 'Nov 28', name: 'Thanksgiving Day' },
+                { date: 'Dec 25', name: 'Christmas Day' }
+              ].map((h) => (
+                <div key={h.date} className="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                  <p className="text-xs font-bold text-primary-400">{h.date}</p>
+                  <p className="text-[11px] font-bold text-zinc-400 mt-1 uppercase tracking-tight">{h.name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Apply Leave Modal */}
@@ -312,26 +321,39 @@ export default function Leaves() {
         isOpen={showApplyModal}
         onClose={handleCloseModal}
         title="Apply for Leave"
-        subtitle="Submit a new leave request"
+        subtitle="Submit a new leave request for approval."
+        size="lg"
         footer={
-        <>
-            <Button variant="ghost" onClick={handleCloseModal}>Cancel</Button>
-            <Button onClick={handleSubmit}>Submit Request</Button>
-          </>
+          <div className="flex gap-3">
+            <Button className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 h-11 px-6 rounded-xl text-xs font-bold" onClick={handleCloseModal}>Cancel</Button>
+            <Button className="bg-primary-600 hover:bg-primary-500 h-11 px-8 rounded-xl text-xs font-bold border-0" onClick={handleSubmit}>Submit Request</Button>
+          </div>
         }>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {currentUser?.role === 'admin' && (
+            <FormSelect
+              label="On Behalf Of"
+              value={formData.employeeName}
+              onChange={(v) => setFormData({ ...formData, employeeName: v })}
+              options={[
+                { value: '', label: 'Select Employee...' },
+                ...state.employees.map(e => ({ value: e.name, label: e.name.toUpperCase() }))
+              ]}
+              required
+            />
+          )}
           <FormSelect
             label="Leave Type"
             value={formData.type}
             onChange={(v) => setFormData({ ...formData, type: v })}
             options={[
-            { value: 'casual', label: 'Casual Leave' },
-            { value: 'sick', label: 'Sick Leave' },
-            { value: 'earned', label: 'Earned Leave' },
-            { value: 'wfh', label: 'Work From Home' },
-            { value: 'compensatory', label: 'Compensatory Leave' }]
-            } />
+              { value: 'casual', label: 'Casual Leave' },
+              { value: 'sick', label: 'Sick Leave' },
+              { value: 'earned', label: 'Earned Leave' },
+              { value: 'wfh', label: 'Work From Home' },
+              { value: 'compensatory', label: 'Compensatory Off' }
+            ]} />
           
           <div className="grid grid-cols-2 gap-4">
             <FormInput
@@ -351,23 +373,26 @@ export default function Leaves() {
               required
               error={errors.endDate}
               min={formData.startDate || new Date().toISOString().split('T')[0]} />
-            
           </div>
-          {formData.startDate && formData.endDate &&
-          <div className="p-3 rounded-xl bg-primary-50 text-primary-700 text-sm">
-              <strong>{calculateDays(formData.startDate, formData.endDate)}</strong> day(s) selected
+          
+          {formData.startDate && formData.endDate && (
+            <div className="p-4 rounded-xl bg-primary-500/5 border border-primary-500/10 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase">Calculated Duration</span>
+              <span className="text-lg font-bold text-primary-400">{calculateDays(formData.startDate, formData.endDate)} Days</span>
             </div>
-          }
+          )}
+          
           <FormTextarea
-            label="Reason"
+            label="Reason for Leave"
             value={formData.reason}
             onChange={(v) => setFormData({ ...formData, reason: v })}
-            placeholder="Please provide a reason for your leave..."
+            placeholder="Enter your reason here..."
             required
             error={errors.reason} />
-          
         </div>
       </Modal>
-    </div>);
-
+    </div>
+  );
 }
+
+

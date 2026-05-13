@@ -1,296 +1,282 @@
-import { useState } from 'react';
-import {
-  Building2, Globe, Shield, Bell, Palette,
-  Plug, ChevronRight, Moon, Sun, Save, CheckCircle2 } from
-'lucide-react';
-import { cn } from '../utils/cn';
+import { 
+  Building2, Shield, Bell, Plug, Globe, Palette, Save, 
+  Moon, ChevronRight, CheckCircle2, Mail, Smartphone,
+  Monitor, Lock, Layout, Zap
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { cn } from '../utils/cn';
+import { useState } from 'react';
+import { Button, FormInput } from '../components/FormInput';
 
 const settingSections = [
-{
-  id: 'organization',
-  title: 'Organization',
-  icon: Building2,
-  color: 'bg-blue-50 text-blue-600',
-  items: ['Company Profile', 'Departments', 'Locations', 'Designations']
-},
-{
-  id: 'access',
-  title: 'Access Control',
-  icon: Shield,
-  color: 'bg-red-50 text-red-600',
-  items: ['Roles & Permissions', 'User Management', 'IP Restrictions', 'Session Settings']
-},
-{
-  id: 'notifications',
-  title: 'Notifications',
-  icon: Bell,
-  color: 'bg-amber-50 text-amber-600',
-  items: ['Email Notifications', 'Push Notifications', 'SMS Alerts', 'Notification Templates']
-},
-{
-  id: 'modules',
-  title: 'Modules',
-  icon: Plug,
-  color: 'bg-violet-50 text-violet-600',
-  items: ['Attendance Settings', 'Leave Policies', 'Payroll Configuration', 'Recruitment Settings']
-},
-{
-  id: 'integrations',
-  title: 'Integrations',
-  icon: Globe,
-  color: 'bg-emerald-50 text-emerald-600',
-  items: ['Slack', 'Microsoft Teams', 'Google Workspace', 'Payment Gateway']
-},
-{
-  id: 'branding',
-  title: 'Branding',
-  icon: Palette,
-  color: 'bg-pink-50 text-pink-600',
-  items: ['Logo & Colors', 'Email Templates', 'Career Page', 'Custom Domain']
-}];
-
+  { id: 'organization', title: 'Organization', icon: Building2, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+  { id: 'notifications', title: 'Notifications', icon: Bell, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  { id: 'access', title: 'Security', icon: Shield, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  { id: 'modules', title: 'Modules', icon: Plug, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+  { id: 'branding', title: 'Branding', icon: Palette, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
+];
 
 export default function Settings() {
-  const { state, dispatch, showToast, updateSettings } = useApp();
+  const { state, showToast, updateSettings } = useApp();
   const [activeSection, setActiveSection] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form states
-  const [companyName, setCompanyName] = useState(state.settings.company_name || 'DMS HRMS');
-  const [gpsEnabled, setGpsEnabled] = useState(state.settings.gps_attendance || false);
-  const [autoGenId, setAutoGenId] = useState(state.settings.auto_gen_id || true);
+  // Unified settings state
+  const [localSettings, setLocalSettings] = useState(state.settings);
 
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    await updateSettings({
-      company_name: companyName,
-      gps_attendance: gpsEnabled,
-      auto_gen_id: autoGenId
-    });
+    await updateSettings(localSettings);
     setIsSaving(false);
+  };
+
+  const updateSetting = (key, value) => {
+    setLocalSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const renderSectionContent = () => {
     const section = settingSections[activeSection];
 
-    if (section.id === 'organization') {
-      return (
-        <div className="space-y-6">
-          <div>
-            <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">Company Profile</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase">Company Name</label>
-                <input
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" />
-                
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-500 uppercase">Website URL</label>
-                <input type="text" placeholder="https://dms.com" className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none" />
-              </div>
+    switch (section.id) {
+      case 'organization':
+        return (
+          <div className="space-y-8 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput
+                label="Company name"
+                value={localSettings.company_name}
+                onChange={(v) => updateSetting('company_name', v)}
+              />
+              <FormInput
+                label="Company website"
+                value={localSettings.website || ''}
+                onChange={(v) => updateSetting('website', v)}
+                placeholder="https://example.com"
+              />
             </div>
-          </div>
-          
-          <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
-            <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">Address Information</h4>
-            <div className="grid grid-cols-1 gap-4">
-              <input type="text" placeholder="Street Address" className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-zinc-800">
+              <FormInput
+                label="Street address"
+                value={localSettings.address || ''}
+                onChange={(v) => updateSetting('address', v)}
+                placeholder="123 Business St"
+              />
               <div className="grid grid-cols-2 gap-4">
-                <input type="text" placeholder="City" className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none" />
-                <input type="text" placeholder="Country" className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none" />
+                <FormInput
+                  label="City"
+                  value={localSettings.city || ''}
+                  onChange={(v) => updateSetting('city', v)}
+                />
+                <FormInput
+                  label="State"
+                  value={localSettings.state || ''}
+                  onChange={(v) => updateSetting('state', v)}
+                />
               </div>
             </div>
           </div>
-        </div>);
+        );
 
-    }
-
-    if (section.id === 'modules') {
-      return (
-        <div className="space-y-6">
-          <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">Attendance Rules</h4>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700">
-              <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">GPS Restricted Attendance</p>
-                <p className="text-xs text-gray-500">Allow check-in only from designated office locations</p>
+      case 'notifications':
+        return (
+          <div className="space-y-6 animate-fade-in">
+            {[
+              { id: 'email_notif', label: 'Email notifications', desc: 'Send daily summaries to employees', icon: Mail },
+              { id: 'push_notif', label: 'Push notifications', desc: 'Real-time browser notifications', icon: Monitor },
+              { id: 'sms_notif', label: 'SMS alerts', desc: 'Emergency and critical alerts', icon: Smartphone },
+            ].map(item => (
+              <div key={item.id} className="flex items-center justify-between p-5 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-500">
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{item.label}</p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => updateSetting(item.id, !localSettings[item.id])}
+                  className={cn(
+                    "w-11 h-6 rounded-full transition-all relative",
+                    localSettings[item.id] ? "bg-primary-600" : "bg-zinc-800"
+                  )}>
+                  <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", localSettings[item.id] ? "left-6" : "left-1")} />
+                </button>
               </div>
-              <button
-                onClick={() => setGpsEnabled(!gpsEnabled)}
-                className={cn(
-                  "w-12 h-6 rounded-full transition-all relative",
-                  gpsEnabled ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-700"
-                )}>
-                
-                <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", gpsEnabled ? "left-7" : "left-1")} />
-              </button>
+            ))}
+          </div>
+        );
+
+      case 'access':
+        return (
+          <div className="space-y-6 animate-fade-in">
+            {[
+              { id: '2fa_enabled', label: 'Two-factor authentication', desc: 'Add extra layer of security', icon: Lock },
+              { id: 'session_timeout', label: 'Auto logout', desc: 'Logout after 30 mins of inactivity', icon: Clock },
+              { id: 'ip_restriction', label: 'IP restriction', desc: 'Limit access to office network', icon: Globe },
+            ].map(item => (
+              <div key={item.id} className="flex items-center justify-between p-5 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-500">
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{item.label}</p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => updateSetting(item.id, !localSettings[item.id])}
+                  className={cn(
+                    "w-11 h-6 rounded-full transition-all relative",
+                    localSettings[item.id] ? "bg-primary-600" : "bg-zinc-800"
+                  )}>
+                  <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", localSettings[item.id] ? "left-6" : "left-1")} />
+                </button>
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'modules':
+        return (
+          <div className="space-y-6 animate-fade-in">
+            {[
+              { id: 'gps_attendance', label: 'GPS attendance', desc: 'Mark attendance only from office', icon: MapPin },
+              { id: 'auto_gen_id', label: 'Auto employee ID', desc: 'Generate IDs automatically', icon: Zap },
+              { id: 'self_onboarding', label: 'Self onboarding', desc: 'Allow employees to fill details', icon: UserPlus },
+            ].map(item => (
+              <div key={item.id} className="flex items-center justify-between p-5 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-500">
+                    <item.icon className={cn("w-5 h-5", item.id === 'gps_attendance' ? 'lucide-map-pin' : '')} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{item.label}</p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => updateSetting(item.id, !localSettings[item.id])}
+                  className={cn(
+                    "w-11 h-6 rounded-full transition-all relative",
+                    localSettings[item.id] ? "bg-primary-600" : "bg-zinc-800"
+                  )}>
+                  <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", localSettings[item.id] ? "left-6" : "left-1")} />
+                </button>
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'branding':
+        return (
+          <div className="space-y-8 animate-fade-in">
+            <div>
+              <h4 className="text-xs font-bold text-white mb-6 uppercase">Color theme</h4>
+              <div className="flex flex-wrap gap-4 p-6 bg-zinc-950 rounded-2xl border border-zinc-800">
+                {['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5CF6', '#06B6D4'].map(color => (
+                  <button
+                    key={color}
+                    onClick={() => updateSetting('primary_color', color)}
+                    className={cn(
+                      "w-10 h-10 rounded-xl transition-all relative border border-white/5",
+                      localSettings.primary_color === color ? "ring-2 ring-white ring-offset-4 ring-offset-zinc-950 scale-110 shadow-lg" : "opacity-40 hover:opacity-100"
+                    )}
+                    style={{ backgroundColor: color }}>
+                    {localSettings.primary_color === color && <CheckCircle2 className="w-4 h-4 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />}
+                  </button>
+                ))}
+              </div>
             </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700">
-              <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Auto-generate Employee IDs</p>
-                <p className="text-xs text-gray-500">System will automatically assign unique IDs to new hires</p>
-              </div>
-              <button
-                onClick={() => setAutoGenId(!autoGenId)}
-                className={cn(
-                  "w-12 h-6 rounded-full transition-all relative",
-                  autoGenId ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-700"
-                )}>
-                
-                <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", autoGenId ? "left-7" : "left-1")} />
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-zinc-800">
+              <FormInput
+                label="Custom font"
+                value={localSettings.font_family || 'Inter'}
+                onChange={(v) => updateSetting('font_family', v)}
+              />
+              <FormInput
+                label="Layout style"
+                value={localSettings.layout || 'Modern'}
+                onChange={(v) => updateSetting('layout', v)}
+              />
             </div>
           </div>
-        </div>);
+        );
 
+      default:
+        return null;
     }
-
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-          <Plug className="w-8 h-8 text-gray-300" />
-        </div>
-        <h5 className="text-sm font-bold text-gray-900 dark:text-white">Section Under Development</h5>
-        <p className="text-xs text-gray-500 mt-1 max-w-[200px]">We're currently implementing the advanced features for {section.title.toLowerCase()}.</p>
-      </div>);
-
   };
 
+  const MapPin = ({className}) => <Globe className={className} />;
+  const UserPlus = ({className}) => <Layout className={className} />;
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 p-8 shadow-sm">
+    <div className="space-y-8 animate-fade-in pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Platform Settings</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">Configure your core system preferences and workflow rules</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
+          <p className="text-sm text-zinc-500 mt-1">Configure system parameters and company profile.</p>
         </div>
-        <button
+        <Button 
+          className="h-11 px-8 rounded-xl text-xs font-bold bg-primary-600 hover:bg-primary-500 border-0"
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-primary-600/30 disabled:opacity-50 group">
-          
-          {isSaving ?
-          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> :
-
-          <>
-              <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              Save Changes
-            </>
-          }
-        </button>
+          icon={isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}>
+          Save changes
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Navigation */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-4 space-y-3">
           {settingSections.map((section, idx) => {
             const Icon = section.icon;
+            const isActive = activeSection === idx;
             return (
               <button
                 key={section.id}
                 onClick={() => setActiveSection(idx)}
                 className={cn(
-                  'w-full flex items-center gap-4 p-5 rounded-[1.5rem] border-2 transition-all text-left group relative overflow-hidden',
-                  activeSection === idx ?
-                  'border-primary-500 bg-primary-50/50 dark:bg-primary-900/10 shadow-lg' :
-                  'border-white dark:border-gray-800 bg-white dark:bg-gray-800 hover:border-gray-100 dark:hover:border-gray-700'
+                  'w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group',
+                  isActive ?
+                    'border-primary-500/30 bg-primary-500/5' :
+                    'border-zinc-800 bg-zinc-900 hover:border-zinc-700'
                 )}>
-                
                 <div className={cn(
-                  'w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110',
-                  activeSection === idx ? "bg-primary-600 text-white" : section.color
+                  'w-11 h-11 rounded-xl flex items-center justify-center transition-all',
+                  isActive ? "bg-primary-500 text-black shadow-lg shadow-primary-500/20" : cn(section.bg, section.color, 'border', section.border)
                 )}>
-                  <Icon className="w-6 h-6" />
+                  <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <p className={cn('text-sm font-black tracking-tight', activeSection === idx ? 'text-primary-900 dark:text-primary-100' : 'text-gray-900 dark:text-white')}>
+                  <p className={cn('text-sm font-bold', isActive ? 'text-white' : 'text-zinc-400 group-hover:text-white')}>
                     {section.title}
                   </p>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{section.items.length} configuration modules</p>
+                  <p className="text-[10px] text-zinc-600 mt-0.5 capitalize">Manage {section.id}</p>
                 </div>
-                <ChevronRight className={cn('w-4 h-4 transition-transform', activeSection === idx ? 'text-primary-500 translate-x-1' : 'text-gray-300')} />
-              </button>);
-
+                <ChevronRight className={cn('w-4 h-4 transition-transform', isActive ? 'text-primary-500 rotate-90 md:rotate-0' : 'text-zinc-800')} />
+              </button>
+            );
           })}
         </div>
 
-        {/* Content */}
-        <div className="lg:col-span-8 bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-4">
-              <div className={cn('w-12 h-12 rounded-2xl flex items-center justify-center', settingSections[activeSection].color)}>
-                {(() => {const Icon = settingSections[activeSection].icon;return <Icon className="w-6 h-6" />;})()}
-              </div>
-              <div>
-                <h4 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">{settingSections[activeSection].title} Management</h4>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Active configuration pane</p>
-              </div>
+        <div className="lg:col-span-8 bg-zinc-900 rounded-[2.5rem] border border-zinc-800 p-8 lg:p-10 shadow-2xl min-h-[600px]">
+          <div className="flex items-center gap-4 mb-10 pb-6 border-b border-zinc-800/50">
+            <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center border', settingSections[activeSection].bg, settingSections[activeSection].color, settingSections[activeSection].border)}>
+              {(() => {const Icon = settingSections[activeSection].icon; return <Icon className="w-6 h-6" />;})()}
             </div>
-            <div className="hidden md:flex items-center gap-2 text-primary-600 dark:text-primary-400 font-bold text-[10px] uppercase bg-primary-50 dark:bg-primary-900/20 px-3 py-1.5 rounded-full">
-              <CheckCircle2 className="w-3 h-3" /> System Verified
+            <div>
+              <h4 className="text-xl font-bold text-white">{settingSections[activeSection].title} settings</h4>
+              <p className="text-xs text-zinc-500 mt-0.5">Customize your workspace experience.</p>
             </div>
           </div>
 
-          <div className="min-h-[400px]">
-            {renderSectionContent()}
-          </div>
-
-          {/* Theme & Quick Settings */}
-          <div className="mt-12 pt-8 border-t-2 border-dashed border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Appearance Mode</h4>
-              <div className="flex items-center justify-between p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                    {state.darkMode ? <Moon className="w-5 h-5 text-primary-500" /> : <Sun className="w-5 h-5 text-amber-500" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">Dark Theme</p>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Interface styling</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    dispatch({ type: 'TOGGLE_DARK_MODE' });
-                    showToast('success', 'Theme Changed', `Switched to ${state.darkMode ? 'light' : 'dark'} mode`);
-                  }}
-                  className={cn(
-                    'w-12 h-6 rounded-full transition-all relative',
-                    state.darkMode ? 'bg-primary-600' : 'bg-gray-300'
-                  )}>
-                  
-                  <div className={cn('absolute top-1 w-4 h-4 rounded-full bg-white transition-all', state.darkMode ? 'left-7' : 'left-1')} />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Session Security</h4>
-              <div className="flex items-center justify-between p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                    <Shield className="w-5 h-5 text-emerald-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">2FA Enabled</p>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Multi-factor auth</p>
-                  </div>
-                </div>
-                <div className="w-12 h-6 rounded-full bg-primary-600 relative opacity-50 cursor-not-allowed">
-                  <div className="absolute top-1 left-7 w-4 h-4 rounded-full bg-white" />
-                </div>
-              </div>
-            </div>
-          </div>
+          {renderSectionContent()}
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }

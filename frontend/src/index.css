@@ -1,32 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #EEF2FF;
-  --color-primary-100: #E0E7FF;
-  --color-primary-200: #C7D2FE;
-  --color-primary-300: #A5B4FC;
-  --color-primary-400: #818CF8;
-  --color-primary-500: #6366F1;
-  --color-primary-600: #4F46E5;
-  --color-primary-700: #4338CA;
-  --color-primary-800: #3730A3;
-  --color-primary-900: #312E81;
-
-  --color-success-50: #ECFDF5;
-  --color-success-500: #10B981;
-  --color-success-600: #059669;
-
-  --color-warning-50: #FFFBEB;
-  --color-warning-500: #F59E0B;
-  --color-warning-600: #D97706;
-
-  --color-danger-50: #FEF2F2;
-  --color-danger-500: #EF4444;
-  --color-danger-600: #DC2626;
-
-  --color-sidebar: #1E1B4B;
-  --color-sidebar-hover: #312E81;
-  --color-sidebar-active: #4338CA;
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
 }
 
 * {
@@ -34,174 +18,72 @@
 }
 
 body {
-  @apply antialiased;
+  @apply antialiased bg-zinc-950 text-zinc-100;
 }
 
-/* Light mode defaults */
-body {
-  @apply bg-gray-50 text-gray-900;
+/* Base Overrides */
+input, select, textarea {
+  @apply bg-zinc-900 border-zinc-800 text-zinc-100 focus:border-primary-500 outline-none transition-all;
 }
 
-/* Dark mode */
-body.dark {
-  @apply bg-gray-900 text-gray-100;
-}
-
-.dark .bg-white {
-  @apply bg-gray-800;
-}
-
-.dark .bg-gray-50 {
-  @apply bg-gray-900;
-}
-
-.dark .bg-gray-100 {
-  @apply bg-gray-800;
-}
-
-.dark .border-gray-100 {
-  @apply border-gray-700;
-}
-
-.dark .border-gray-200 {
-  @apply border-gray-700;
-}
-
-.dark .text-gray-900 {
-  @apply text-gray-100;
-}
-
-.dark .text-gray-700 {
-  @apply text-gray-300;
-}
-
-.dark .text-gray-600 {
-  @apply text-gray-400;
-}
-
-.dark .text-gray-500 {
-  @apply text-gray-400;
-}
-
-.dark .hover\:bg-gray-50:hover {
-  @apply bg-gray-700;
-}
-
-.dark .hover\:bg-gray-100:hover {
-  @apply bg-gray-700;
-}
-
-.dark input, .dark select, .dark textarea {
-  @apply bg-gray-700 text-gray-100;
-}
-
-.dark .bg-gray-50\/80 {
-  background-color: rgba(31, 41, 55, 0.8);
-}
-
+/* Simple Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  @apply bg-zinc-950;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  @apply bg-gray-600;
+  @apply bg-zinc-800 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  @apply bg-zinc-700;
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
+/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.animate-slide-in {
-  animation: slideIn 0.3s ease-out;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
 
-.animate-scale-in {
-  animation: scaleIn 0.2s ease-out;
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+/* Utility Classes */
+.card-simple {
+  @apply bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
+.input-simple {
+  @apply w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm focus:border-primary-500 transition-all;
 }
 
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 8s ease infinite;
+/* Autofill overrides to maintain dark theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #09090b inset !important;
+  -webkit-text-fill-color: #f4f4f5 !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Glass morphism */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.dark .glass {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #D946EF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Hero gradient */
-.hero-gradient {
-  background: linear-gradient(135deg, #1E1B4B 0%, #312E81 25%, #4338CA 50%, #6366F1 75%, #818CF8 100%);
-}
-
-/* Pattern overlay */
-.pattern-overlay {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+/* Lowercase-first text style — convert uppercase labels to normal case */
+.uppercase {
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
 }

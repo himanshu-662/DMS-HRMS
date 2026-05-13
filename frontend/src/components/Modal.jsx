@@ -28,38 +28,43 @@ export default function Modal({ isOpen, onClose, title, subtitle, children, size
   const sizes = {
     sm: 'max-w-sm',
     md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-2xl'
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl'
   };
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6"
       onClick={onClose}>
       
       <div
-        className={`bg-white rounded-2xl w-full ${sizes[size]} max-h-[90vh] flex flex-col animate-scale-in`}
+        className={`bg-zinc-900 border border-zinc-800/50 rounded-[2.5rem] w-full ${sizes[size]} max-h-[95vh] flex flex-col animate-scale-in shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] relative overflow-hidden`}
         onClick={(e) => e.stopPropagation()}>
         
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        {/* Top Gradient Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-primary-500/50 to-transparent" />
+
+        <div className="flex items-center justify-between p-8 border-b border-zinc-800/50">
           <div>
-            <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+            <h3 className="text-xl font-black text-white tracking-tight uppercase tracking-widest text-sm">{title}</h3>
+            {subtitle && <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest mt-2">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
-            
+            className="w-10 h-10 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all active:scale-90">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-6">{children}</div>
+        
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          {children}
+        </div>
+        
         {footer &&
-        <div className="p-6 border-t border-gray-100 flex items-center justify-end gap-3">
+        <div className="p-8 border-t border-zinc-800/50 flex items-center justify-end gap-4 bg-zinc-950/30">
             {footer}
           </div>
         }
       </div>
     </div>);
-
 }

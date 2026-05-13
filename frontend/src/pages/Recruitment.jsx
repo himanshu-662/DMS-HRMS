@@ -25,19 +25,19 @@ const stageLabels = {
 };
 
 const stageColors = {
-  applied: 'bg-gray-100 text-gray-700 border-gray-200',
-  screening: 'bg-blue-50 text-blue-700 border-blue-200',
-  interview: 'bg-violet-50 text-violet-700 border-violet-200',
-  technical: 'bg-orange-50 text-orange-700 border-orange-200',
-  hr_round: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-  selected: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  rejected: 'bg-red-50 text-red-700 border-red-200',
-  onboarding: 'bg-green-50 text-green-700 border-green-200'
+  applied: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  screening: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  interview: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  technical: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  hr_round: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  selected: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  rejected: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  onboarding: 'bg-primary-500/10 text-primary-400 border-primary-500/20'
 };
 
 export default function Recruitment() {
   const { state, dispatch, showToast } = useApp();
-  const { jobPostings, candidates } = state;
+  const { jobPostings = [], candidates = [] } = state;
 
   const [activeTab, setActiveTab] = useState('jobs');
   const [showJobModal, setShowJobModal] = useState(false);
@@ -127,234 +127,243 @@ export default function Recruitment() {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Open Positions" value={stats.openJobs} icon={Briefcase} color="blue" />
-        <StatCard title="Total Applicants" value={stats.totalApplicants} change={8.5} icon={Users} color="purple" />
-        <StatCard title="In Pipeline" value={stats.inPipeline} icon={Clock} color="orange" />
-        <StatCard title="Hired This Month" value={stats.hired} change={50} icon={UserCheck} color="green" />
+    <div className="space-y-8 animate-fade-in pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Recruitment</h1>
+          <p className="text-sm text-zinc-500 mt-1">Manage job openings and candidate pipelines.</p>
+        </div>
+        <Button className="bg-primary-600 hover:bg-primary-500 text-xs font-bold px-6 h-11 shadow-lg shadow-primary-900/20" icon={<Plus className="w-4 h-4" />} onClick={() => setShowJobModal(true)}>Post Job</Button>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: 'Open Positions', value: stats.openJobs, icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+          { label: 'Total Applicants', value: stats.totalApplicants, icon: Users, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+          { label: 'In Pipeline', value: stats.inPipeline, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+          { label: 'Hired', value: stats.hired, icon: UserCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' }
+        ].map((stat) => (
+          <div key={stat.label} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 flex flex-col">
+            <div className={`w-10 h-10 rounded-xl ${stat.bg} ${stat.border} border flex items-center justify-center mb-4`}>
+              <stat.icon className={`w-5 h-5 ${stat.color}`} />
+            </div>
+            <p className="text-2xl font-bold text-white tracking-tight">{stat.value}</p>
+            <p className="text-xs font-medium text-zinc-500 mt-1 uppercase tracking-wider">{stat.label}</p>
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-2xl border border-gray-100">
-        <div className="flex items-center justify-between px-5 pt-4 border-b border-gray-100">
-          <div className="flex items-center gap-1">
-            {['jobs', 'candidates', 'pipeline'].map((tab) =>
+      <div className="space-y-6">
+        <div className="bg-zinc-900 p-1 rounded-xl border border-zinc-800 inline-flex">
+          {['jobs', 'candidates', 'pipeline'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                'px-4 py-2.5 text-sm font-medium rounded-t-xl transition-colors border-b-2 -mb-px',
-                activeTab === tab ?
-                'border-primary-600 text-primary-600 bg-primary-50/50' :
-                'border-transparent text-gray-500 hover:text-gray-700'
+                'px-6 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all',
+                activeTab === tab ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
               )}>
-              
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            )}
-          </div>
-          <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowJobModal(true)} size="sm">
-            Post Job
-          </Button>
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Jobs Tab */}
-        {activeTab === 'jobs' &&
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {jobPostings.map((job) =>
-          <div key={job.id} className="border border-gray-100 rounded-2xl p-5 hover:shadow-lg hover:shadow-gray-100/50 transition-all group">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                    <Briefcase className="w-5 h-5 text-primary-600" />
+        {/* Content */}
+        {activeTab === 'jobs' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {jobPostings.map((job) => (
+              <div key={job.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-8 hover:border-zinc-700 transition-all group">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-primary-600/10 border border-primary-500/20 flex items-center justify-center">
+                    <Briefcase className="w-6 h-6 text-primary-400" />
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={cn(
-                  'text-[11px] font-semibold px-2.5 py-1 rounded-full',
-                  job.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                )}>
-                      {job.status.toUpperCase()}
+                      'text-[10px] font-bold px-2 py-1 rounded-md border uppercase tracking-wider',
+                      job.status === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+                    )}>
+                      {job.status}
                     </span>
                     <button
-                  onClick={() => {setSelectedJob(job);setShowDeleteConfirm(true);}}
-                  className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-danger-600 opacity-0 group-hover:opacity-100 transition-all">
-                  
+                      onClick={() => {setSelectedJob(job); setShowDeleteConfirm(true);}}
+                      className="p-1.5 text-zinc-600 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <h4 className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">{job.title}</h4>
-                <p className="text-xs text-gray-500 mt-1">{job.department}</p>
-                <div className="mt-3 space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <MapPin className="w-3.5 h-3.5" /> {job.location}
+                
+                <h4 className="text-lg font-bold text-white group-hover:text-primary-400 transition-colors">{job.title}</h4>
+                <p className="text-xs text-zinc-500 mt-1 uppercase font-medium">{job.department}</p>
+                
+                <div className="mt-8 space-y-3">
+                  <div className="flex items-center gap-3 text-xs text-zinc-400">
+                    <MapPin className="w-4 h-4 text-zinc-600" /> {job.location}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Clock className="w-3.5 h-3.5" /> {job.experience}
+                  <div className="flex items-center gap-3 text-xs text-zinc-400">
+                    <Clock className="w-4 h-4 text-zinc-600" /> {job.experience}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Users className="w-3.5 h-3.5" /> {job.applicants} applicants
+                  <div className="flex items-center gap-3 text-xs text-primary-400 font-bold">
+                    <Users className="w-4 h-4" /> {job.applicants} Applicants
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400">
+                
+                <div className="mt-8 pt-6 border-t border-zinc-800 flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-600 font-medium">
                     Posted {new Date(job.postedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
-                  <button className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                    View <ChevronRight className="w-3 h-3" />
+                  <button className="text-[10px] font-bold text-primary-500 uppercase tracking-widest flex items-center gap-2 hover:text-primary-400 transition-colors group/btn">
+                    Details <ChevronRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                   </button>
                 </div>
               </div>
-          )}
+            ))}
           </div>
-        }
+        )}
 
-        {/* Candidates Tab */}
-        {activeTab === 'candidates' &&
-        <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50/80 border-b border-gray-100">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Candidate</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Position</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Stage</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Rating</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {candidates.map((c) =>
-              <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          {c.name.split(' ').map((n) => n[0]).join('')}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{c.name}</p>
-                          <p className="text-xs text-gray-500">{c.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">{c.position}</td>
-                    <td className="px-4 py-3">
-                      <select
-                    value={c.stage}
-                    onChange={(e) => handleMoveCandidate(c.id, e.target.value)}
-                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border-0 cursor-pointer ${stageColors[c.stage]}`}>
-                    
-                        {[...stages, 'rejected'].map((s) =>
-                    <option key={s} value={s}>{stageLabels[s]}</option>
-                    )}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      {c.rating > 0 ?
-                  <div className="flex items-center gap-1">
-                          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                          <span className="text-sm font-medium text-gray-700">{c.rating}</span>
-                        </div> :
-
-                  <span className="text-xs text-gray-400">N/A</span>
-                  }
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                    onClick={() => {setSelectedCandidate(c);setShowCandidateModal(true);}}
-                    className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-primary-600 transition-colors ml-auto">
-                    
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </td>
+        {activeTab === 'candidates' && (
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-zinc-950/50 border-b border-zinc-800">
+                    <th className="text-left px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Candidate</th>
+                    <th className="text-left px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider hidden sm:table-cell">Position</th>
+                    <th className="text-left px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Stage</th>
+                    <th className="text-left px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider hidden md:table-cell">Rating</th>
+                    <th className="text-right px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Action</th>
                   </tr>
-              )}
-              </tbody>
-            </table>
-          </div>
-        }
-
-        {/* Pipeline Tab */}
-        {activeTab === 'pipeline' &&
-        <div className="p-5">
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {stages.map((stage) => {
-              const stageCandidates = candidates.filter((c) => c.stage === stage);
-              return (
-                <div key={stage} className="min-w-[240px] flex-shrink-0">
-                    <div className={cn('rounded-xl border p-3 mb-3', stageColors[stage])}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold">{stageLabels[stage]}</span>
-                        <span className="text-xs font-bold">{stageCandidates.length}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2 min-h-[200px]">
-                      {stageCandidates.map((c) =>
-                    <div
-                      key={c.id}
-                      className="bg-white border border-gray-100 rounded-xl p-3 hover:shadow-md transition-all cursor-pointer"
-                      onClick={() => {setSelectedCandidate(c);setShowCandidateModal(true);}}>
-                      
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold">
-                              {c.name.split(' ').map((n) => n[0]).join('')}
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold text-gray-900">{c.name}</p>
-                              <p className="text-[10px] text-gray-500">{c.position}</p>
-                            </div>
+                </thead>
+                <tbody className="divide-y divide-zinc-800">
+                  {candidates.map((c) => (
+                    <tr key={c.id} className="hover:bg-zinc-800/50 transition-colors group">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-white text-[10px] font-bold">
+                            {c.name.split(' ').map((n) => n[0]).join('')}
                           </div>
-                          {c.rating > 0 &&
-                      <div className="flex items-center gap-1">
-                              {[1, 2, 3, 4, 5].map((star) =>
-                        <Star
-                          key={star}
+                          <div>
+                            <p className="text-sm font-bold text-white group-hover:text-primary-400 transition-colors">{c.name}</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">{c.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-[11px] font-medium text-zinc-400 uppercase hidden sm:table-cell">{c.position}</td>
+                      <td className="px-6 py-5">
+                        <select
+                          value={c.stage}
+                          onChange={(e) => handleMoveCandidate(c.id, e.target.value)}
                           className={cn(
-                            'w-3 h-3',
-                            star <= Math.floor(c.rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'
-                          )} />
-
+                            "text-[10px] font-bold px-3 py-1.5 rounded-lg border uppercase tracking-wider cursor-pointer focus:outline-none transition-all",
+                            stageColors[c.stage] || stageColors.applied
+                          )}>
+                          {[...stages, 'rejected'].map((s) => (
+                            <option key={s} value={s} className="bg-zinc-950 text-white">{stageLabels[s].toUpperCase()}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-6 py-5 hidden md:table-cell">
+                        {c.rating > 0 ? (
+                          <div className="flex items-center gap-1.5">
+                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                            <span className="text-sm font-bold text-white">{c.rating}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-zinc-700 font-bold uppercase">Pending</span>
                         )}
-                              <span className="text-[10px] text-gray-400 ml-1">{c.rating}</span>
-                            </div>
-                      }
-                          {stage !== 'onboarding' && stage !== 'selected' &&
-                      <div className="flex gap-1 mt-2">
-                              <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const nextStage = stages[stages.indexOf(stage) + 1];
-                            if (nextStage) handleMoveCandidate(c.id, nextStage);
-                          }}
-                          className="flex-1 text-[10px] font-medium py-1 px-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors">
-                          
-                                Advance →
-                              </button>
-                              <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMoveCandidate(c.id, 'rejected');
-                          }}
-                          className="text-[10px] font-medium py-1 px-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
-                          
-                                Reject
-                              </button>
-                            </div>
-                      }
-                        </div>
-                    )}
-                      {stageCandidates.length === 0 &&
-                    <div className="text-center py-8 text-xs text-gray-400 border-2 border-dashed border-gray-100 rounded-xl">
-                          No candidates
-                        </div>
-                    }
-                    </div>
-                  </div>);
-
-            })}
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <button
+                          onClick={() => {setSelectedCandidate(c); setShowCandidateModal(true);}}
+                          className="p-2 text-zinc-500 hover:text-white transition-colors">
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        }
+        )}
+
+        {activeTab === 'pipeline' && (
+          <div className="flex gap-6 overflow-x-auto pb-8 custom-scrollbar">
+            {stages.map((stage) => {
+              const stageCandidates = candidates.filter((c) => c.stage === stage);
+              return (
+                <div key={stage} className="min-w-[300px] flex-shrink-0">
+                  <div className={cn('rounded-xl border p-4 mb-4 flex items-center justify-between', stageColors[stage])}>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{stageLabels[stage]}</span>
+                    <span className="w-6 h-6 rounded-md bg-black/20 flex items-center justify-center text-[10px] font-bold">{stageCandidates.length}</span>
+                  </div>
+                  
+                  <div className="space-y-4 min-h-[500px] p-2 bg-zinc-950/20 rounded-2xl border border-zinc-800/30">
+                    {stageCandidates.map((c) => (
+                      <div
+                        key={c.id}
+                        className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-600 transition-all cursor-pointer group"
+                        onClick={() => {setSelectedCandidate(c); setShowCandidateModal(true);}}>
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center text-white text-[10px] font-bold">
+                            {c.name.split(' ').map((n) => n[0]).join('')}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-white group-hover:text-primary-400 transition-colors leading-none">{c.name}</p>
+                            <p className="text-[10px] text-zinc-500 font-medium uppercase mt-1.5">{c.position}</p>
+                          </div>
+                        </div>
+                        
+                        {c.rating > 0 && (
+                          <div className="flex items-center gap-1 mb-4">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={cn(
+                                  'w-3 h-3',
+                                  star <= Math.floor(c.rating) ? 'text-amber-500 fill-amber-500' : 'text-zinc-800'
+                                )} />
+                            ))}
+                          </div>
+                        )}
+                        
+                        {stage !== 'onboarding' && stage !== 'selected' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const nextStage = stages[stages.indexOf(stage) + 1];
+                                if (nextStage) handleMoveCandidate(c.id, nextStage);
+                              }}
+                              className="flex-1 text-[9px] font-bold py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all uppercase tracking-wider">
+                              Move Forward
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMoveCandidate(c.id, 'rejected');
+                              }}
+                              className="text-[9px] font-bold py-2 px-3 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-700 hover:text-rose-500 hover:border-rose-500/30 transition-all uppercase tracking-wider">
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {stageCandidates.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-16 opacity-20">
+                        <Users className="w-8 h-8 text-zinc-500 mb-2" />
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Empty</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Post Job Modal */}
@@ -362,24 +371,24 @@ export default function Recruitment() {
         isOpen={showJobModal}
         onClose={handleCloseJobModal}
         title="Post New Job"
-        subtitle="Create a new job opening"
+        subtitle="Create a new job opening for the team."
         size="lg"
         footer={
-        <>
-            <Button variant="ghost" onClick={handleCloseJobModal}>Cancel</Button>
-            <Button onClick={handleCreateJob}>Post Job</Button>
+          <>
+            <Button variant="ghost" className="px-6 text-xs font-bold" onClick={handleCloseJobModal}>Cancel</Button>
+            <Button className="bg-primary-600 px-8 text-xs font-bold shadow-lg shadow-primary-900/20" onClick={handleCreateJob}>Post Job</Button>
           </>
         }>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           <FormInput
             label="Job Title"
             value={jobForm.title}
             onChange={(v) => setJobForm({ ...jobForm, title: v })}
-            placeholder="Senior Frontend Developer"
+            placeholder="e.g. Senior Software Engineer"
             required />
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-6">
             <FormSelect
               label="Department"
               value={jobForm.department}
@@ -391,139 +400,140 @@ export default function Recruitment() {
               value={jobForm.type}
               onChange={(v) => setJobForm({ ...jobForm, type: v })}
               options={[
-              { value: 'full_time', label: 'Full Time' },
-              { value: 'part_time', label: 'Part Time' },
-              { value: 'contract', label: 'Contract' },
-              { value: 'remote', label: 'Remote' }]
-              } />
-            
+                { value: 'full_time', label: 'Full-time' },
+                { value: 'part_time', label: 'Part-time' },
+                { value: 'contract', label: 'Contract' },
+                { value: 'remote', label: 'Remote' }
+              ]} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-2 gap-6">
             <FormInput
               label="Location"
               value={jobForm.location}
               onChange={(v) => setJobForm({ ...jobForm, location: v })}
-              placeholder="San Francisco, CA"
+              placeholder="e.g. Remote / New York"
               required />
             
             <FormInput
-              label="Experience Required"
+              label="Experience"
               value={jobForm.experience}
               onChange={(v) => setJobForm({ ...jobForm, experience: v })}
-              placeholder="3-5 years" />
-            
+              placeholder="e.g. 5+ years" />
           </div>
+
           <FormTextarea
-            label="Job Description"
+            label="Description"
             value={jobForm.description}
             onChange={(v) => setJobForm({ ...jobForm, description: v })}
-            placeholder="Describe the role, responsibilities, and requirements..."
+            placeholder="Outline job responsibilities and requirements..."
             rows={4} />
-          
         </div>
       </Modal>
 
       {/* Candidate Details Modal */}
       <Modal
         isOpen={showCandidateModal}
-        onClose={() => {setShowCandidateModal(false);setSelectedCandidate(null);}}
-        title="Candidate Details"
+        onClose={() => {setShowCandidateModal(false); setSelectedCandidate(null);}}
+        title="Candidate Profile"
+        subtitle="Review candidate information and progress."
         size="lg"
         footer={
-        <Button onClick={() => {setShowCandidateModal(false);setSelectedCandidate(null);}}>Close</Button>
+          <Button className="bg-zinc-800 px-8 text-xs font-bold" onClick={() => {setShowCandidateModal(false); setSelectedCandidate(null);}}>Close</Button>
         }>
         
-        {selectedCandidate &&
-        <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-xl font-bold">
+        {selectedCandidate && (
+          <div className="space-y-8">
+            <div className="flex items-center gap-5 p-6 bg-zinc-950 rounded-2xl border border-zinc-800">
+              <div className="w-16 h-16 rounded-xl bg-primary-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
                 {selectedCandidate.name.split(' ').map((n) => n[0]).join('')}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">{selectedCandidate.name}</h3>
-                <p className="text-sm text-gray-500">{selectedCandidate.position}</p>
-                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${stageColors[selectedCandidate.stage]}`}>
-                  {stageLabels[selectedCandidate.stage]}
-                </span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 rounded-xl bg-gray-50">
-                <p className="text-[11px] text-gray-400 font-medium uppercase">Email</p>
-                <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedCandidate.email}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-gray-50">
-                <p className="text-[11px] text-gray-400 font-medium uppercase">Phone</p>
-                <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedCandidate.phone}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-gray-50">
-                <p className="text-[11px] text-gray-400 font-medium uppercase">Applied Date</p>
-                <p className="text-sm font-medium text-gray-900 mt-0.5">{new Date(selectedCandidate.appliedDate).toLocaleDateString()}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-gray-50">
-                <p className="text-[11px] text-gray-400 font-medium uppercase">Rating</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  {selectedCandidate.rating > 0 ?
-                <>
-                      {[1, 2, 3, 4, 5].map((star) =>
-                  <Star
-                    key={star}
-                    className={cn(
-                      'w-4 h-4',
-                      star <= Math.floor(selectedCandidate.rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'
-                    )} />
-
-                  )}
-                      <span className="text-sm font-medium text-gray-700 ml-1">{selectedCandidate.rating}</span>
-                    </> :
-
-                <span className="text-sm text-gray-400">Not rated yet</span>
-                }
+                <h3 className="text-xl font-bold text-white">{selectedCandidate.name}</h3>
+                <p className="text-xs text-zinc-500 font-medium uppercase mt-1.5">{selectedCandidate.position}</p>
+                <div className="mt-4">
+                  <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-lg border uppercase tracking-wider", stageColors[selectedCandidate.stage] || stageColors.applied)}>
+                    {stageLabels[selectedCandidate.stage]}
+                  </span>
                 </div>
               </div>
             </div>
-            {selectedCandidate.stage !== 'onboarding' && selectedCandidate.stage !== 'rejected' &&
-          <div className="flex gap-2 pt-4 border-t border-gray-100">
+
+            <div className="grid grid-cols-2 gap-6">
+              {[
+                { label: 'Email', value: selectedCandidate.email },
+                { label: 'Phone', value: selectedCandidate.phone },
+                { label: 'Applied On', value: new Date(selectedCandidate.appliedDate).toLocaleDateString() },
+                { label: 'Rating', value: selectedCandidate.rating, isRating: true }
+              ].map((item) => (
+                <div key={item.label} className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800">
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider">{item.label}</p>
+                  <div className="mt-2">
+                    {item.isRating ? (
+                      <div className="flex items-center gap-1.5">
+                        {item.value > 0 ? (
+                          <>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={cn(
+                                  'w-4 h-4',
+                                  star <= Math.floor(item.value) ? 'text-amber-500 fill-amber-500' : 'text-zinc-800'
+                                )} />
+                            ))}
+                            <span className="text-sm font-bold text-white ml-1.5">{item.value}</span>
+                          </>
+                        ) : (
+                          <span className="text-xs font-bold text-zinc-700 uppercase italic">Not rated</span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm font-bold text-zinc-300">{item.value}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {selectedCandidate.stage !== 'onboarding' && selectedCandidate.stage !== 'rejected' && (
+              <div className="flex gap-4 pt-4">
                 <Button
-              variant="primary"
-              onClick={() => {
-                const nextStage = stages[stages.indexOf(selectedCandidate.stage) + 1];
-                if (nextStage) {
-                  handleMoveCandidate(selectedCandidate.id, nextStage);
-                  setShowCandidateModal(false);
-                  setSelectedCandidate(null);
-                }
-              }}
-              fullWidth>
-              
-                  Advance to {stageLabels[stages[stages.indexOf(selectedCandidate.stage) + 1] || 'next']}
+                  className="bg-primary-600 hover:bg-primary-500 text-xs font-bold h-12 flex-1 shadow-lg shadow-primary-900/20"
+                  onClick={() => {
+                    const nextStage = stages[stages.indexOf(selectedCandidate.stage) + 1];
+                    if (nextStage) {
+                      handleMoveCandidate(selectedCandidate.id, nextStage);
+                      setShowCandidateModal(false);
+                      setSelectedCandidate(null);
+                    }
+                  }}>
+                  Move to {stageLabels[stages[stages.indexOf(selectedCandidate.stage) + 1] || 'next']}
                 </Button>
                 <Button
-              variant="danger"
-              onClick={() => {
-                handleMoveCandidate(selectedCandidate.id, 'rejected');
-                setShowCandidateModal(false);
-                setSelectedCandidate(null);
-              }}>
-              
-                  Reject
+                  variant="danger"
+                  className="h-12 flex-1 text-xs font-bold"
+                  onClick={() => {
+                    handleMoveCandidate(selectedCandidate.id, 'rejected');
+                    setShowCandidateModal(false);
+                    setSelectedCandidate(null);
+                  }}>
+                  Reject Application
                 </Button>
               </div>
-          }
+            )}
           </div>
-        }
+        )}
       </Modal>
 
-      {/* Delete Job Confirmation */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteJob}
-        title="Delete Job Posting"
-        message={`Are you sure you want to delete "${selectedJob?.title}"? This action cannot be undone.`}
+        title="Remove Job Posting"
+        message={`This will permanently delete the "${selectedJob?.title}" position. This action cannot be undone.`}
         type="danger"
-        confirmText="Delete" />
-      
-    </div>);
-
+        confirmText="Remove Posting" />
+    </div>
+  );
 }
+

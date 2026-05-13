@@ -81,20 +81,23 @@ class EmployeeModel(BaseModel):
     salary: float = 0.0
     skills: List[str] = []
     avatar: Optional[str] = ""
+    createAccount: bool = False
 
 class UserLogin(BaseModel):
     email: str
     password: str
     role: str
 
-class UserResponse(BaseModel):
-    id: str
-    name: str
-    email: str
-    role: str
-    avatar: str = ""
-    department: str = ""
-    designation: str = ""
+class AttendanceModel(BaseModel):
+    employeeId: str
+    date: str
+    checkIn: Optional[str] = None
+    checkOut: Optional[str] = None
+    status: str = "present"
+    totalHours: float = 0.0
+    location: Optional[str] = None
+    ipAddress: Optional[str] = None
+    notes: Optional[str] = None
 
 @app.on_event("startup")
 async def startup_event():
@@ -187,13 +190,31 @@ async def get_employees():
 @app.post("/api/employees")
 async def add_employee(employee: EmployeeModel):
     emp_dict = employee.dict()
+    create_account = emp_dict.pop("createAccount", False)
+    
     emp_dict["id"] = f"e{int(datetime.utcnow().timestamp())}"
     # Generate employee ID (e.g., DMS001)
     count = await db.employees.count_documents({})
     emp_dict["employeeId"] = f"DMS{str(count + 1).zfill(3)}"
     await db.employees.insert_one(emp_dict)
     
-    # Remove _id from dict if it was added by insert_one to avoid serialization error
+    if create_account:
+        # Create a user record so they can log in
+        # Default password is the email
+        user_dict = {
+            "id": str(uuid.uuid4()),
+            "name": employee.name,
+            "email": employee.email,
+            "hashed_password": get_password_hash(employee.email),
+            "role": "employee",
+            "department": employee.department,
+            "designation": employee.designation
+        }
+        # Avoid duplicate users
+        await db.users.delete_many({"email": employee.email})
+        await db.users.insert_one(user_dict)
+        logger.info(f"Created user account for employee {employee.email} with default password")
+
     if "_id" in emp_dict:
         del emp_dict["_id"]
     return emp_dict

@@ -9,23 +9,24 @@ import { useState } from 'react';
 
 const pageTitles = {
   dashboard: 'Dashboard',
-  employees: 'Employee Management',
-  attendance: 'Attendance Tracking',
-  leaves: 'Leave Management',
-  payroll: 'Payroll Management',
-  recruitment: 'Recruitment & ATS',
-  performance: 'Performance Management',
-  assets: 'Asset Management',
-  helpdesk: 'Help Desk',
-  shifts: 'Shift Scheduling',
-  reports: 'Reports & Analytics',
+  employees: 'Employees',
+  attendance: 'Attendance',
+  leaves: 'Leave management',
+  tasks: 'Task Manager',
+  payroll: 'Payroll',
+  recruitment: 'Recruitment',
+  performance: 'Performance',
+  assets: 'Assets',
+  helpdesk: 'Help desk',
+  shifts: 'Shifts',
+  reports: 'Reports',
   settings: 'Settings',
-  profile: 'My Profile'
+  profile: 'My profile'
 };
 
 export default function Header() {
   const { state, dispatch, navigateTo, logout } = useApp();
-  const { currentPage, sidebarCollapsed, searchQuery, notifications, currentUser } = state;
+  const { currentPage = 'dashboard', sidebarCollapsed = false, searchQuery = '', notifications = [], currentUser = null } = state;
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -41,56 +42,47 @@ export default function Header() {
 
   return (
     <header className={cn(
-      'fixed top-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 z-30 flex items-center justify-between px-4 lg:px-6 transition-all duration-300',
-      sidebarCollapsed ? 'left-0 lg:left-[72px]' : 'left-0 lg:left-[260px]'
+      'fixed top-0 right-0 h-16 bg-zinc-900/60 backdrop-blur-2xl border-b border-zinc-800/50 z-30 flex items-center justify-between px-4 lg:px-8 transition-all duration-300',
+      sidebarCollapsed ? 'left-0 lg:left-[80px]' : 'left-0 lg:left-[280px]'
     )}>
       {/* Left: Mobile menu + Title */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <button
           onClick={() => dispatch({ type: 'TOGGLE_MOBILE_MENU' })}
-          className="lg:hidden w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-          
-          <Menu className="w-5 h-5 text-gray-600" />
+          className="lg:hidden w-10 h-10 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center hover:bg-zinc-700 transition-all active:scale-95">
+          <Menu className="w-5 h-5 text-zinc-300" />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">{pageTitles[currentPage]}</h2>
-          <p className="text-xs text-gray-500 hidden sm:block">
-            Welcome back, {currentUser?.name.split(' ')[0]} 👋
+          <h2 className="text-lg font-bold text-white tracking-tight leading-none">{pageTitles[currentPage]}</h2>
+          <p className="text-[10px] text-zinc-500 font-medium mt-1 hidden sm:block">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </p>
         </div>
       </div>
 
       {/* Center: Search */}
-      <div className="hidden md:flex flex-1 max-w-md mx-6">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="hidden md:flex flex-1 max-w-lg mx-12">
+        <div className="relative w-full group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-primary-500 transition-colors" />
           <input
             type="text"
-            placeholder="Search employees, records, reports..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => dispatch({ type: 'SET_SEARCH', payload: e.target.value })}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm border-0 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:bg-white transition-all" />
+            className="w-full pl-11 pr-10 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm font-medium focus:outline-none focus:border-primary-500 transition-all text-white placeholder:text-zinc-700" />
           
           {searchQuery &&
           <button
             onClick={() => dispatch({ type: 'SET_SEARCH', payload: '' })}
-            className="absolute right-3 top-1/2 -translate-y-1/2">
-            
-              <X className="w-4 h-4 text-gray-400" />
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-zinc-800 rounded-lg transition-colors">
+              <X className="w-3.5 h-3.5 text-zinc-500 hover:text-white" />
             </button>
           }
         </div>
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => dispatch({ type: 'TOGGLE_DARK_MODE' })}
-          className="w-9 h-9 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors">
-          
-          {state.darkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-gray-600" />}
-        </button>
-
+      <div className="flex items-center gap-3">
         {/* Notifications */}
         <div className="relative">
           <button
@@ -98,60 +90,64 @@ export default function Header() {
               setShowNotifications(!showNotifications);
               setShowProfileMenu(false);
             }}
-            className="w-9 h-9 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors relative">
-            
-            <Bell className="w-5 h-5 text-gray-600" />
+            className="w-10 h-10 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center transition-all hover:bg-zinc-900 hover:border-zinc-700 relative active:scale-95 group">
+            <Bell className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" />
             {unreadCount > 0 &&
-            <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-danger-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white">
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary-600 text-white text-[10px] font-black flex items-center justify-center ring-4 ring-zinc-900 animate-pulse">
                 {unreadCount}
               </span>
             }
           </button>
 
           {showNotifications &&
-          <div className="absolute right-0 top-12 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 animate-scale-in overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-900">Notifications</h3>
+          <div className="absolute right-0 top-14 w-80 sm:w-96 bg-zinc-900 rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border border-zinc-800 animate-scale-in overflow-hidden z-50">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/30">
+                <h3 className="font-bold text-white text-sm">Notifications</h3>
                 <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-primary-600 font-medium hover:text-primary-700">
-                
-                  Mark all read
+                className="text-xs text-primary-500 font-bold hover:text-primary-400">
+                  Mark all as read
                 </button>
               </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.slice(0, 10).map((n) =>
-              <div
-                key={n.id}
-                onClick={() => handleNotificationClick(n.id)}
-                className={cn(
-                  'flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer',
-                  !n.read && 'bg-primary-50/50'
-                )}>
-                
-                    <div className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0',
-                  n.type === 'success' && 'bg-success-50 text-success-600',
-                  n.type === 'info' && 'bg-primary-50 text-primary-600',
-                  n.type === 'warning' && 'bg-warning-50 text-warning-600',
-                  n.type === 'error' && 'bg-danger-50 text-danger-600'
-                )}>
-                      {n.type === 'success' ? <Check className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{n.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {new Date(n.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    {!n.read && <div className="w-2 h-2 rounded-full bg-primary-500 mt-2 flex-shrink-0" />}
+              <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                {notifications.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Bell className="w-10 h-10 text-zinc-800 mx-auto mb-3" />
+                    <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest">No new alerts</p>
                   </div>
-              )}
+                ) : (
+                  notifications.slice(0, 10).map((n) =>
+                  <div
+                    key={n.id}
+                    onClick={() => handleNotificationClick(n.id)}
+                    className={cn(
+                      'flex items-start gap-4 px-6 py-4 hover:bg-zinc-800/50 transition-colors border-b border-zinc-800/30 last:border-0 cursor-pointer group',
+                      !n.read && 'bg-primary-500/[0.03]'
+                    )}>
+                        <div className={cn(
+                      'w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 border transition-all group-hover:scale-110',
+                      n.type === 'success' && 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+                      n.type === 'info' && 'bg-primary-500/10 text-primary-500 border-primary-500/20',
+                      n.type === 'warning' && 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+                      n.type === 'error' && 'bg-red-500/10 text-red-500 border-red-500/20'
+                    )}>
+                          {n.type === 'success' ? <Check className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-zinc-100">{n.title}</p>
+                          <p className="text-xs text-zinc-500 mt-1 line-clamp-2 leading-relaxed">{n.message}</p>
+                          <p className="text-[10px] text-zinc-600 mt-2 font-medium">
+                            {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        {!n.read && <div className="w-2 h-2 rounded-full bg-primary-500 mt-2 flex-shrink-0 animate-pulse" />}
+                      </div>
+                  )
+                )}
               </div>
-              <div className="px-4 py-2.5 border-t border-gray-100 text-center">
-                <button className="text-xs text-primary-600 font-medium hover:text-primary-700">
-                  View All Notifications
+              <div className="px-6 py-4 border-t border-zinc-800 text-center">
+                <button onClick={() => { dispatch({ type: 'CLEAR_NOTIFICATIONS' }); setShowNotifications(false); }} className="text-xs text-zinc-500 font-bold hover:text-white transition-colors">
+                  Clear All
                 </button>
               </div>
             </div>
@@ -165,47 +161,45 @@ export default function Header() {
               setShowProfileMenu(!showProfileMenu);
               setShowNotifications(false);
             }}
-            className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-xl hover:bg-gray-100 transition-colors">
+            className="flex items-center gap-3 pl-2 pr-2 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-all active:scale-95 group">
             
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-600 flex items-center justify-center text-white text-xs font-bold shadow-lg">
               {currentUser?.name.split(' ').map((n) => n[0]).join('')}
             </div>
-            <span className="text-sm font-medium text-gray-700 hidden sm:block">
-              {currentUser?.name.split(' ')[0]}
-            </span>
-            <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:block" />
+            <div className="hidden sm:block text-left">
+              <p className="text-xs font-bold text-white leading-tight">{currentUser?.name.split(' ')[0]}</p>
+              <p className="text-[10px] text-zinc-500 font-medium capitalize">{currentUser?.role.replace('_', ' ')}</p>
+            </div>
+            <ChevronDown className={cn("w-3.5 h-3.5 text-zinc-600 transition-transform", showProfileMenu && "rotate-180")} />
           </button>
 
           {showProfileMenu &&
-          <div className="absolute right-0 top-12 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 animate-scale-in overflow-hidden py-1">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <p className="text-sm font-semibold text-gray-900">{currentUser?.name}</p>
-                <p className="text-xs text-gray-500">{currentUser?.email}</p>
+          <div className="absolute right-0 top-14 w-64 bg-zinc-900 rounded-2xl shadow-xl border border-zinc-800 overflow-hidden py-2 z-50">
+              <div className="px-6 py-4 border-b border-zinc-800 mb-1">
+                <p className="text-sm font-bold text-white">{currentUser?.name}</p>
+                <p className="text-[10px] text-zinc-500 truncate mt-0.5">{currentUser?.email}</p>
               </div>
               <button
               onClick={() => {
                 navigateTo('profile');
                 setShowProfileMenu(false);
               }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-              
-                <User className="w-4 h-4" /> My Profile
+              className="w-full flex items-center gap-3 px-6 py-3.5 text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-all group">
+                <User className="w-4 h-4 group-hover:text-primary-400" /> Account Settings
               </button>
               <button
               onClick={() => {
                 navigateTo('settings');
                 setShowProfileMenu(false);
               }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-              
+              className="w-full flex items-center gap-3 px-6 py-3 text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all group">
                 <Settings className="w-4 h-4" /> Settings
               </button>
-              <div className="border-t border-gray-100 mt-1 pt-1">
+              <div className="border-t border-zinc-800 mt-2 pt-2">
                 <button
                 onClick={logout}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger-600 hover:bg-danger-50 transition-colors">
-                
-                  <LogOut className="w-4 h-4" /> Sign Out
+                className="w-full flex items-center gap-3 px-6 py-3.5 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-all">
+                  <LogOut className="w-4 h-4" /> Logout
                 </button>
               </div>
             </div>
