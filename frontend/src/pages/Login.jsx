@@ -9,9 +9,9 @@ import { cn } from '../utils/cn';
 
 export default function Login({ onGoToSignup }) {
   const { login, state, dispatch } = useApp();
-  const [email, setEmail] = useState('admin@dms.com');
-  const [password, setPassword] = useState('admin123');
-  const [role, setRole] = useState('hr_admin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('employee');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
