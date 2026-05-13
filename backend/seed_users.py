@@ -1,8 +1,8 @@
 import asyncio
 import uuid
 from datetime import datetime
-from backend.database import db, init_db
-from backend.auth import get_password_hash
+from database import db, init_db
+from auth import get_password_hash
 
 async def seed_demo_users():
     print("Initializing database...")
