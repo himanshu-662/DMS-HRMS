@@ -1,24 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
+  --color-primary-50: var(--primary-50, #eff6ff);
+  --color-primary-100: var(--primary-100, #dbeafe);
+  --color-primary-200: var(--primary-200, #bfdbfe);
+  --color-primary-300: var(--primary-300, #93c5fd);
+  --color-primary-400: var(--primary-400, #60a5fa);
+  --color-primary-500: var(--primary-500, #3b82f6);
+  --color-primary-600: var(--primary-600, #2563eb);
+  --color-primary-700: var(--primary-700, #1d4ed8);
+  --color-primary-800: var(--primary-800, #1e40af);
+  --color-primary-900: var(--primary-900, #1e3a8a);
+  --color-slate-950: #020617;
 }
 
 * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-family, 'Inter'), -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body {
-  @apply antialiased bg-zinc-950 text-zinc-100;
+  @apply antialiased bg-black text-zinc-100;
 }
 
 /* Base Overrides */
@@ -33,7 +34,7 @@ input, select, textarea {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-zinc-950;
+  @apply bg-black;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -55,6 +56,29 @@ input, select, textarea {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
@@ -63,13 +87,17 @@ input, select, textarea {
   animation: slideUp 0.3s ease-out;
 }
 
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
 /* Utility Classes */
 .card-simple {
   @apply bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg;
 }
 
 .input-simple {
-  @apply w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm focus:border-primary-500 transition-all;
+  @apply w-full px-4 py-2.5 bg-black border border-zinc-800 rounded-xl text-sm focus:border-primary-500 transition-all;
 }
 
 /* Autofill overrides to maintain dark theme */
@@ -86,4 +114,63 @@ input:-webkit-autofill:active {
 .uppercase {
   text-transform: none !important;
   letter-spacing: 0.02em !important;
+}
+
+/* Executive Glass Utility */
+.glass-executive {
+  @apply bg-[#020617]/60 backdrop-blur-3xl border border-white/10 rounded-2xl;
+  box-shadow: 
+    0 20px 50px -12px rgba(0, 0, 0, 0.8),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.luminous-stroke {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important; /* Subtle base border */
+}
+
+.luminous-stroke::before {
+  content: "";
+  position: absolute;
+  inset: -1px; /* Overlap the base border */
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, 
+    rgba(255,255,255,0.3) 0%, 
+    rgba(255,255,255,0) 40%, 
+    rgba(255,255,255,0) 60%, 
+    rgba(255,255,255,0.1) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.text-executive-header {
+  @apply font-black tracking-tighter leading-[0.85];
+  letter-spacing: -0.03em;
+}
+
+.bg-slate-950 {
+  background-color: var(--color-slate-950);
+}
+
+.transform-gpu {
+  transform: translate3d(var(--tw-translate-x), var(--tw-translate-y), 0) rotateX(var(--tw-rotate-x)) rotateY(var(--tw-rotate-y)) rotateZ(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
+.rotate-x-12 {
+  --tw-rotate-x: 12deg;
+}
+
+.rotate-x-0 {
+  --tw-rotate-x: 0deg;
+}
+
+.-rotate-x-12 {
+  --tw-rotate-x: -12deg;
 }

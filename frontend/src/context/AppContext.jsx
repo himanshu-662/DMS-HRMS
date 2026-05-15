@@ -1,13 +1,17 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.PROD ? '' : 'http://localhost:8000';
+const API_URL = import.meta.env.PROD ? '' : 'http://localhost:8001';
 
-const api = axios.create({ baseURL: API_URL });
+export const api = axios.create({ baseURL: API_URL });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('dms-token');
+  const orgContext = localStorage.getItem('dms-org-context');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (orgContext && orgContext !== 'null' && orgContext !== 'undefined') {
+    config.headers['X-Organization-Context'] = orgContext;
+  }
   return config;
 });
 
@@ -108,6 +112,7 @@ const getInitialState = () => ({
   sidebarCollapsed: false,
   mobileMenuOpen: false,
   searchQuery: '',
+  orgContext: localStorage.getItem('dms-org-context') || null,
   employees: [],
   attendance: seedAttendance,
   leaveRequests: seedLeaves,
@@ -141,13 +146,21 @@ function appReducer(state, action) {
       return { ...state, isAuthenticated: true, currentUser: action.payload.user, showLanding: false };
     case 'LOGOUT':
       localStorage.removeItem('dms-token');
-      return { ...getInitialState(), darkMode: state.darkMode };
+      localStorage.removeItem('dms-org-context');
+      return { ...getInitialState(), darkMode: state.darkMode, orgContext: null };
 
     // Misc
     case 'SET_DATA': return { ...state, ...action.payload };
     case 'SET_SETTINGS': return { ...state, settings: action.payload };
     case 'TOGGLE_DARK_MODE': return { ...state, darkMode: !state.darkMode };
     case 'SET_SHOW_LANDING': return { ...state, showLanding: action.payload };
+    case 'SET_ORG_CONTEXT':
+      if (action.payload) {
+        localStorage.setItem('dms-org-context', action.payload);
+      } else {
+        localStorage.removeItem('dms-org-context');
+      }
+      return { ...state, orgContext: action.payload };
     case 'SET_PAGE': return { ...state, currentPage: action.payload, mobileMenuOpen: false };
     case 'TOGGLE_SIDEBAR': return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
     case 'TOGGLE_MOBILE_MENU': return { ...state, mobileMenuOpen: !state.mobileMenuOpen };
@@ -156,7 +169,7 @@ function appReducer(state, action) {
     case 'HYDRATE': return { ...state, ...action.payload };
 
     // Toasts
-    case 'ADD_TOAST': return { ...state, toasts: [...state.toasts, { ...action.payload, id: generateId() }] };
+    case 'ADD_TOAST': return { ...state, toasts: [...state.toasts, action.payload] };
     case 'REMOVE_TOAST': return { ...state, toasts: state.toasts.filter((t) => t.id !== action.payload) };
 
     // Notifications
@@ -292,6 +305,17 @@ export function AppProvider({ children }) {
   }, [state]);
 
   useEffect(() => {
+    if (state.isAuthenticated && state.settings?.session_timeout) {
+      const timeout = setTimeout(() => {
+        logout();
+        showToast('warning', 'Session Expired', 'You have been logged out due to inactivity.');
+      }, 30 * 60 * 1000); // 30 minutes
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [state.isAuthenticated, state.settings?.session_timeout, state.currentPage]);
+
+  useEffect(() => {
     if (state.isAuthenticated) {
       refreshData();
     }
@@ -326,9 +350,24 @@ export function AppProvider({ children }) {
     }
   };
 
-  const showToast = (type, title, message) => {
+  const showToast = (type, title, message, category = 'system') => {
     const id = generateId();
     dispatch({ type: 'ADD_TOAST', payload: { id, type, title, message } });
+    
+    // Automatically record to permanent notification history
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: {
+        id: generateId(),
+        title,
+        message,
+        type,
+        category,
+        read: false,
+        timestamp: new Date().toISOString()
+      }
+    });
+
     setTimeout(() => {
       dispatch({ type: 'REMOVE_TOAST', payload: id });
     }, 3000);
@@ -346,9 +385,9 @@ export function AppProvider({ children }) {
     }
   };
 
-  const signup = async (name, email, password, role) => {
+  const signup = async (name, email, password, role, company_name) => {
     try {
-      const response = await api.post('/api/auth/register', { name, email, password, role });
+      const response = await api.post('/api/auth/register', { name, email, password, role, company_name });
       dispatch({ type: 'LOGIN_SUCCESS', payload: response.data });
       showToast('success', 'Account Created', `Welcome, ${name}!`);
       return true;

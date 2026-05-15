@@ -73,29 +73,18 @@ export default function Leaves() {
     };
 
     dispatch({ type: 'ADD_LEAVE', payload: newRequest });
-    dispatch({
-      type: 'ADD_NOTIFICATION',
-      payload: {
-        id: Date.now().toString(),
-        title: 'Leave Applied',
-        message: `Your ${formData.type} leave request for ${days} day(s) has been submitted.`,
-        type: 'info',
-        read: false,
-        timestamp: new Date().toISOString()
-      }
-    });
-    showToast('success', 'Leave Applied', `Your request for ${days} day(s) has been submitted.`);
+    showToast('success', 'Leave Applied', `Your request for ${days} day(s) has been submitted.`, 'update');
     handleCloseModal();
   };
 
   const handleApprove = (id) => {
     dispatch({ type: 'APPROVE_LEAVE', payload: id });
-    showToast('success', 'Leave Approved', 'The leave request has been approved.');
+    showToast('success', 'Leave Approved', 'The leave request has been approved.', 'update');
   };
 
   const handleReject = (id) => {
     dispatch({ type: 'REJECT_LEAVE', payload: id });
-    showToast('info', 'Leave Rejected', 'The leave request has been rejected.');
+    showToast('info', 'Leave Rejected', 'The leave request has been rejected.', 'alert');
   };
 
   const handleCloseModal = () => {

@@ -5,7 +5,7 @@ import {
 import { cn } from '../utils/cn';
 import { useApp } from '../context/AppContext';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const pageTitles = {
   dashboard: 'Dashboard',
@@ -29,6 +29,22 @@ export default function Header() {
   const { currentPage = 'dashboard', sidebarCollapsed = false, searchQuery = '', notifications = [], currentUser = null } = state;
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  
+  const notificationRef = useRef(null);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -83,8 +99,16 @@ export default function Header() {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-3">
+        {/* Organization Name Badge */}
+        {currentUser?.organization?.company_name && (
+          <div className="hidden lg:flex items-center px-4 py-1.5 bg-zinc-950 border border-zinc-800 rounded-full">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary-500 mr-2 animate-pulse" />
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{currentUser.organization.company_name}</span>
+          </div>
+        )}
+
         {/* Notifications */}
-        <div className="relative">
+        <div className="relative" ref={notificationRef}>
           <button
             onClick={() => {
               setShowNotifications(!showNotifications);
@@ -155,7 +179,7 @@ export default function Header() {
         </div>
 
         {/* Profile */}
-        <div className="relative">
+        <div className="relative" ref={profileRef}>
           <button
             onClick={() => {
               setShowProfileMenu(!showProfileMenu);
@@ -163,8 +187,12 @@ export default function Header() {
             }}
             className="flex items-center gap-3 pl-2 pr-2 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-all active:scale-95 group">
             
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-600 flex items-center justify-center text-white text-xs font-bold shadow-lg">
-              {currentUser?.name.split(' ').map((n) => n[0]).join('')}
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-600 flex items-center justify-center text-white text-xs font-bold shadow-lg overflow-hidden">
+              {currentUser?.avatar ? (
+                <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                currentUser?.name.split(' ').map((n) => n[0]).join('')
+              )}
             </div>
             <div className="hidden sm:block text-left">
               <p className="text-xs font-bold text-white leading-tight">{currentUser?.name.split(' ')[0]}</p>

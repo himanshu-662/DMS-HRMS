@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
   Mail, Phone, MapPin, Building2, Calendar, Briefcase,
-  Award, Shield, Edit, Camera, Save, Key, Check } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+  Award, Shield, Edit, Camera, Save, Key, Check, Trash2, Globe, Lock } from 'lucide-react';
+import { useApp, api } from '../context/AppContext';
 import Modal from '../components/Modal';
 import { FormInput, Button } from '../components/FormInput';
 import { cn } from '../utils/cn';
@@ -20,8 +20,23 @@ export default function Profile() {
     designation: currentUser?.designation || '',
     department: currentUser?.department || '',
   });
+  const [orgFormData, setOrgFormData] = useState({
+    company_name: currentUser?.organization?.company_name || '',
+    website: currentUser?.organization?.website || '',
+    address: currentUser?.organization?.address || '',
+    city: currentUser?.organization?.city || '',
+    state: currentUser?.organization?.state || '',
+    country: currentUser?.organization?.country || '',
+    zip_code: currentUser?.organization?.zip_code || '',
+    registration_number: currentUser?.organization?.registration_number || '',
+    tax_id: currentUser?.organization?.tax_id || '',
+    phone: currentUser?.organization?.phone || '',
+    email: currentUser?.organization?.email || '',
+  });
+  const [showOrgModal, setShowOrgModal] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [pwError, setPwError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // Derived stats
   const myLeaves = leaveRequests.filter((l) => l.employeeId === currentUser?.id || l.employeeName === currentUser?.name);
@@ -31,37 +46,169 @@ export default function Profile() {
     ? (attendance.filter((a) => a.status === 'present' || a.status === 'wfh').length / attendance.length * 100).toFixed(1)
     : '98.0';
 
-  const handleSave = () => {
+  const [isOrgLogoUploading, setIsOrgLogoUploading] = useState(false);
+
+  const handleOrgSave = async () => {
+    try {
+      await api.post('/api/organization/profile', orgFormData);
+      
+      // Update currentUser in state
+      dispatch({
+        type: 'SET_DATA',
+        payload: {
+          currentUser: {
+            ...currentUser,
+            organization: {
+              ...currentUser.organization,
+              company_name: orgFormData.company_name,
+              website: orgFormData.website,
+              address: orgFormData.address,
+              city: orgFormData.city,
+              state: orgFormData.state,
+              country: orgFormData.country,
+              zip_code: orgFormData.zip_code,
+              registration_number: orgFormData.registration_number,
+              tax_id: orgFormData.tax_id,
+              phone: orgFormData.phone,
+              email: orgFormData.email
+            }
+          }
+        }
+      });
+      showToast('success', 'Organization updated', 'Company details have been saved.');
+      setShowOrgModal(false);
+    } catch (err) {
+      showToast('error', 'Update failed', err.response?.data?.detail || 'Could not save organization changes.');
+    }
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('error', 'File too large', 'Please upload an image smaller than 2MB.');
+      return;
+    }
+
+    setIsOrgLogoUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const base64String = reader.result;
+        const response = await api.post('/api/organization/logo', { logo: base64String });
+
+        if (response.data) {
+          dispatch({
+            type: 'SET_DATA',
+            payload: { 
+              currentUser: { 
+                ...currentUser, 
+                organization: { ...currentUser.organization, logo: base64String } 
+              } 
+            }
+          });
+          showToast('success', 'Logo updated', 'Organization logo has been updated.');
+        }
+      } catch (err) {
+        showToast('error', 'Upload failed', err.response?.data?.detail || 'Could not save organization logo.');
+      } finally {
+        setIsOrgLogoUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       showToast('error', 'Validation Error', 'Name cannot be empty.');
       return;
     }
-    // Update currentUser in state
-    dispatch({
-      type: 'SET_DATA',
-      payload: {
-        currentUser: {
-          ...currentUser,
-          name: formData.name,
-          phone: formData.phone,
-          location: formData.location,
-          designation: formData.designation,
-          department: formData.department,
+    
+    try {
+      await api.post('/api/user/profile', formData);
+      
+      // Update currentUser in state
+      dispatch({
+        type: 'SET_DATA',
+        payload: {
+          currentUser: {
+            ...currentUser,
+            ...formData
+          }
         }
-      }
-    });
-    showToast('success', 'Profile updated', 'Your information has been saved.');
-    setShowEditModal(false);
+      });
+      showToast('success', 'Profile updated', 'Your information has been saved permanently.');
+      setShowEditModal(false);
+    } catch (err) {
+      showToast('error', 'Update failed', err.response?.data?.detail || 'Could not save profile changes.');
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     setPwError('');
     if (!pwForm.current) { setPwError('Current password is required.'); return; }
     if (pwForm.newPw.length < 6) { setPwError('New password must be at least 6 characters.'); return; }
     if (pwForm.newPw !== pwForm.confirm) { setPwError('Passwords do not match.'); return; }
-    showToast('success', 'Password changed', 'Your password has been updated successfully.');
-    setPwForm({ current: '', newPw: '', confirm: '' });
-    setShowPasswordModal(false);
+    
+    try {
+      await api.post('/api/user/change-password', pwForm);
+      showToast('success', 'Password changed', 'Your password has been updated successfully.');
+      setPwForm({ current: '', newPw: '', confirm: '' });
+      setShowPasswordModal(false);
+    } catch (err) {
+      setPwError(err.response?.data?.detail || 'Could not update password. Please check your current password.');
+      showToast('error', 'Update failed', 'Password change failed.');
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('error', 'File too large', 'Please upload an image smaller than 2MB.');
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const base64String = reader.result;
+        const response = await api.post('/api/user/profile-image', { avatar: base64String });
+
+        if (response.data) {
+          dispatch({
+            type: 'SET_DATA',
+            payload: { currentUser: { ...currentUser, avatar: base64String } }
+          });
+          showToast('success', 'Image updated', 'Profile picture has been updated.');
+        }
+      } catch (err) {
+        showToast('error', 'Upload failed', err.response?.data?.detail || 'Could not save profile image.');
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = async () => {
+    try {
+      const defaultAvatar = `https://ui-avatars.com/api/?name=${currentUser?.name.replace(' ', '+')}&background=random`;
+      const response = await api.post('/api/user/profile-image', { avatar: defaultAvatar });
+
+      if (response.data) {
+        dispatch({
+          type: 'SET_DATA',
+          payload: { currentUser: { ...currentUser, avatar: defaultAvatar } }
+        });
+        showToast('success', 'Image removed', 'Reverted to default avatar.');
+      }
+    } catch (err) {
+      showToast('error', 'Action failed', 'Could not remove profile image.');
+    }
   };
 
   const initials = currentUser?.name?.split(' ').map((n) => n[0]).join('') || '?';
@@ -78,15 +225,34 @@ export default function Profile() {
         <div className="relative z-10 px-8 pb-8 -mt-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="flex flex-col md:flex-row items-end gap-6">
-              <div className="relative">
-                <div className="w-28 h-28 rounded-3xl bg-zinc-900 p-1 border border-zinc-800 shadow-2xl">
-                  <div className="w-full h-full rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center overflow-hidden">
-                    <span className="text-3xl font-bold text-white">{initials}</span>
-                  </div>
+              <div className="relative group">
+                <div className="w-28 h-28 rounded-3xl bg-zinc-900 p-1 border border-zinc-800 shadow-2xl relative overflow-hidden">
+                  {currentUser?.avatar ? (
+                    <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover rounded-2xl" />
+                  ) : (
+                    <div className="w-full h-full rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+                      <span className="text-3xl font-bold text-white">{initials}</span>
+                    </div>
+                  )}
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
-                <button className="absolute bottom-1 right-1 w-8 h-8 rounded-xl bg-white text-black shadow-lg flex items-center justify-center border border-zinc-200 hover:scale-110 active:scale-95 transition-all">
-                  <Camera className="w-4 h-4" />
-                </button>
+                <div className="absolute -bottom-2 -right-2 flex gap-1">
+                  {currentUser?.avatar && !currentUser.avatar.includes('ui-avatars') && (
+                    <button 
+                      onClick={handleRemoveImage}
+                      className="w-8 h-8 rounded-xl bg-red-500 text-white shadow-lg flex items-center justify-center border border-red-400 hover:scale-110 active:scale-95 transition-all">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  <label className="w-8 h-8 rounded-xl bg-white text-black shadow-lg flex items-center justify-center border border-zinc-200 hover:scale-110 active:scale-95 transition-all cursor-pointer">
+                    <Camera className="w-4 h-4" />
+                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+                  </label>
+                </div>
               </div>
               
               <div className="mb-1">
@@ -162,6 +328,82 @@ export default function Profile() {
               ))}
             </div>
           </div>
+
+          {/* Organization Details (for Admins) */}
+          {(currentUser?.role === 'hr_admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'admin') && (
+            <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-8 lg:p-10 shadow-xl">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-6">
+                  <div className="relative group">
+                    <div className="w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden shadow-lg">
+                      {currentUser?.organization?.logo ? (
+                        <img src={currentUser.organization.logo} alt="" className="w-full h-full object-contain p-2" />
+                      ) : (
+                        <Building2 className="w-8 h-8 text-zinc-700" />
+                      )}
+                      {isOrgLogoUploading && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <label className="absolute -bottom-2 -right-2 w-7 h-7 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white cursor-pointer hover:bg-zinc-700 transition-all shadow-xl">
+                      <Camera className="w-3.5 h-3.5" />
+                      <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} disabled={isOrgLogoUploading} />
+                    </label>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Organization details</h3>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Manage company-wide profile information</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setOrgFormData({
+                      company_name: currentUser?.organization?.company_name || '',
+                      website: currentUser?.organization?.website || '',
+                      address: currentUser?.organization?.address || '',
+                      city: currentUser?.organization?.city || '',
+                      state: currentUser?.organization?.state || '',
+                      country: currentUser?.organization?.country || '',
+                      zip_code: currentUser?.organization?.zip_code || '',
+                      registration_number: currentUser?.organization?.registration_number || '',
+                      tax_id: currentUser?.organization?.tax_id || '',
+                      phone: currentUser?.organization?.phone || '',
+                      email: currentUser?.organization?.email || '',
+                    });
+                    setShowOrgModal(true);
+                  }}
+                  icon={<Edit className="w-3 h-3" />}>
+                  Edit Company
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: 'Company Name', value: currentUser?.organization?.company_name || '', icon: Building2, color: 'text-blue-400' },
+                  { label: 'Website', value: currentUser?.organization?.website || '', icon: Globe, color: 'text-emerald-400' },
+                  { label: 'Registration No', value: currentUser?.organization?.registration_number || '', icon: Shield, color: 'text-amber-400' },
+                  { label: 'Tax ID', value: currentUser?.organization?.tax_id || '', icon: Lock, color: 'text-pink-400' },
+                  { label: 'Email', value: currentUser?.organization?.email || '', icon: Mail, color: 'text-violet-400' },
+                  { label: 'Phone', value: currentUser?.organization?.phone || '', icon: Phone, color: 'text-cyan-400' },
+                  { label: 'Address', value: currentUser?.organization?.address || '', icon: MapPin, color: 'text-primary-400' },
+                  { label: 'Location', value: currentUser?.organization?.city ? `${currentUser?.organization?.city}, ${currentUser?.organization?.state || ''} ${currentUser?.organization?.zip_code || ''}` : '', icon: MapPin, color: 'text-zinc-400' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-4 p-4 rounded-2xl bg-zinc-950/50 border border-zinc-800 hover:border-zinc-700 transition-all group">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <item.icon className={cn('w-4 h-4', item.color)} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-zinc-600 font-medium">{item.label}</p>
+                      <p className="text-sm font-semibold text-white mt-0.5 truncate max-w-[150px]">{item.value || '—'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-8 lg:p-10 shadow-xl">
             <h3 className="text-sm font-bold text-white mb-8">Career history</h3>
@@ -282,6 +524,50 @@ export default function Profile() {
           <FormInput label="New password" type="password" value={pwForm.newPw} onChange={(v) => setPwForm({ ...pwForm, newPw: v })} placeholder="Min 6 characters" />
           <FormInput label="Confirm new password" type="password" value={pwForm.confirm} onChange={(v) => setPwForm({ ...pwForm, confirm: v })} placeholder="Re-enter new password" />
           {pwError && <p className="text-xs text-red-400 font-medium">{pwError}</p>}
+        </div>
+      </Modal>
+      
+      {/* Organization Details Modal */}
+      <Modal
+        isOpen={showOrgModal}
+        onClose={() => setShowOrgModal(false)}
+        title="Edit organization"
+        subtitle="Update your company profile information."
+        size="lg"
+        footer={
+          <div className="flex gap-3">
+            <Button className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 h-11 px-6 rounded-xl text-xs font-bold" onClick={() => setShowOrgModal(false)}>Cancel</Button>
+            <Button className="bg-primary-600 hover:bg-primary-500 h-11 px-8 rounded-xl text-xs font-bold border-0" onClick={handleOrgSave} icon={<Save className="w-4 h-4" />}>Save Company</Button>
+          </div>
+        }>
+        
+        <div className="space-y-6 p-1 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput label="Company Name" value={orgFormData.company_name} onChange={(v) => setOrgFormData({ ...orgFormData, company_name: v })} placeholder="Enter company name" required />
+            <FormInput label="Website" value={orgFormData.website} onChange={(v) => setOrgFormData({ ...orgFormData, website: v })} placeholder="https://example.com" />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput label="Company Email" value={orgFormData.email} onChange={(v) => setOrgFormData({ ...orgFormData, email: v })} placeholder="contact@company.com" />
+            <FormInput label="Company Phone" value={orgFormData.phone} onChange={(v) => setOrgFormData({ ...orgFormData, phone: v })} placeholder="+1-555-0199" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-zinc-800 pt-4">
+            <FormInput label="Registration Number" value={orgFormData.registration_number} onChange={(v) => setOrgFormData({ ...orgFormData, registration_number: v })} placeholder="REG-123456" />
+            <FormInput label="Tax ID / VAT" value={orgFormData.tax_id} onChange={(v) => setOrgFormData({ ...orgFormData, tax_id: v })} placeholder="TAX-789012" />
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-zinc-800">
+            <FormInput label="Street Address" value={orgFormData.address} onChange={(v) => setOrgFormData({ ...orgFormData, address: v })} placeholder="123 Business St" />
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput label="City" value={orgFormData.city} onChange={(v) => setOrgFormData({ ...orgFormData, city: v })} placeholder="City" />
+              <FormInput label="State/Province" value={orgFormData.state} onChange={(v) => setOrgFormData({ ...orgFormData, state: v })} placeholder="State" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput label="Country" value={orgFormData.country} onChange={(v) => setOrgFormData({ ...orgFormData, country: v })} placeholder="Country" />
+              <FormInput label="Zip/Postal Code" value={orgFormData.zip_code} onChange={(v) => setOrgFormData({ ...orgFormData, zip_code: v })} placeholder="12345" />
+            </div>
+          </div>
         </div>
       </Modal>
     </div>

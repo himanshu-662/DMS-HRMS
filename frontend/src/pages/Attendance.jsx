@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Clock, UserCheck, UserX, AlertTriangle, Home,
-  CalendarDays, Download, LogIn, LogOut } from
+  CalendarDays, Download, LogIn, LogOut, Globe } from
 'lucide-react';
 import { useApp } from '../context/AppContext';
 import StatCard from '../components/StatCard';
@@ -11,6 +11,10 @@ import { Button } from '../components/FormInput';
 export default function Attendance() {
   const { state, dispatch, showToast } = useApp();
   const { attendance = [], todayCheckIn = null, todayCheckOut = null, currentUser = null } = state;
+  const role = currentUser?.role || 'employee';
+  const isAdmin = role === 'hr_admin';
+  const isManager = role === 'manager';
+  const isEmployee = role === 'employee';
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -33,23 +37,12 @@ export default function Attendance() {
 
   const handleCheckIn = () => {
     dispatch({ type: 'CHECK_IN' });
-    dispatch({
-      type: 'ADD_NOTIFICATION',
-      payload: {
-        id: Date.now().toString(),
-        title: 'Checked In',
-        message: `You checked in at ${new Date().toLocaleTimeString()}`,
-        type: 'success',
-        read: false,
-        timestamp: new Date().toISOString()
-      }
-    });
-    showToast('success', 'Checked In', `Welcome, ${currentUser?.name}!`);
+    showToast('success', 'Checked In', `Welcome, ${currentUser?.name}!`, 'update');
   };
 
   const handleCheckOut = () => {
     dispatch({ type: 'CHECK_OUT' });
-    showToast('success', 'Checked Out', 'Have a great rest of your day!');
+    showToast('success', 'Checked Out', 'Have a great rest of your day!', 'update');
   };
 
   const exportAttendance = () => {
@@ -89,19 +82,21 @@ export default function Attendance() {
         </div>
         
         <div className="flex items-center gap-6 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
-          <div className="text-center px-6 border-r border-zinc-800">
-            <p className="text-2xl font-bold text-white">
-              {todayRecords.length > 0 ? Math.round((stats.present + stats.wfh) / todayRecords.length * 100) : 0}%
-            </p>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-1">Present Rate</p>
-          </div>
+          {!isEmployee && (
+            <div className="text-center px-6 border-r border-zinc-800">
+              <p className="text-2xl font-bold text-white">
+                {todayRecords.length > 0 ? Math.round((stats.present + stats.wfh) / todayRecords.length * 100) : 0}%
+              </p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-1">Team Presence</p>
+            </div>
+          )}
           
           {isToday && (
             <div className="flex gap-3">
               {!todayCheckIn ? (
                 <Button 
                   onClick={handleCheckIn}
-                  className="h-11 px-6 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 border-0" 
+                  className="h-11 px-6 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 border-0 shadow-lg shadow-emerald-900/20" 
                   icon={<LogIn className="w-4 h-4" />}>
                   Check In
                 </Button>
@@ -122,24 +117,77 @@ export default function Attendance() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-        {[
-          { label: 'Present', value: stats.present, icon: UserCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-          { label: 'Absent', value: stats.absent, icon: UserX, color: 'text-rose-400', bg: 'bg-rose-500/10' },
-          { label: 'Late', value: stats.late, icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-          { label: 'WFH', value: stats.wfh, icon: Home, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { label: 'On Leave', value: stats.onLeave, icon: CalendarDays, color: 'text-violet-400', bg: 'bg-violet-500/10' }
-        ].map((stat) => (
-          <div key={stat.label} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
-            <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-4`}>
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
-            </div>
-            <p className="text-2xl font-bold text-white">{stat.value}</p>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-1">{stat.label}</p>
+      {state.settings?.gps_attendance && (
+        <div className="flex items-center gap-3 p-4 bg-primary-500/10 border border-primary-500/20 rounded-2xl animate-fade-in">
+          <div className="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center">
+            <Globe className="w-4 h-4 text-black" />
           </div>
-        ))}
-      </div>
+          <div>
+            <p className="text-xs font-bold text-white">GPS Attendance Enabled</p>
+            <p className="text-[10px] text-primary-400">Your location will be verified during check-in.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Cards - Role Aware */}
+      {!isEmployee ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+          {[
+            { label: 'Present', value: stats.present, icon: UserCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+            { label: 'Absent', value: stats.absent, icon: UserX, color: 'text-rose-400', bg: 'bg-rose-500/10' },
+            { label: 'Late', value: stats.late, icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+            { label: 'WFH', value: stats.wfh, icon: Home, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+            { label: 'On Leave', value: stats.onLeave, icon: CalendarDays, color: 'text-violet-400', bg: 'bg-violet-500/10' }
+          ].map((stat) => (
+            <div key={stat.label} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
+              <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-4`}>
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+              </div>
+              <p className="text-2xl font-bold text-white">{stat.value}</p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-1">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl shadow-xl">
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Daily Status</p>
+            <div className="flex items-center gap-4">
+              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", todayCheckIn ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-500")}>
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-white">{todayCheckIn ? 'Present' : 'Not Marked'}</p>
+                <p className="text-xs text-zinc-500 mt-1">{todayCheckIn ? `In: ${todayCheckIn}` : 'Click Check In to start'}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl shadow-xl">
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Total Hours</p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                <CalendarDays className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-white">{todayCheckOut ? '8.5h' : '---'}</p>
+                <p className="text-xs text-zinc-500 mt-1">Current Session</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl shadow-xl">
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Location</p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                <Globe className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-white">Office</p>
+                <p className="text-xs text-zinc-500 mt-1">Main Headquarters</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl">
@@ -166,12 +214,14 @@ export default function Attendance() {
             ))}
           </div>
         </div>
-        <Button 
-          className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 h-10 px-6 rounded-xl text-xs font-bold" 
-          icon={<Download className="w-4 h-4" />} 
-          onClick={exportAttendance}>
-          Export CSV
-        </Button>
+        {!isEmployee && (
+          <Button 
+            className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 h-10 px-6 rounded-xl text-xs font-bold" 
+            icon={<Download className="w-4 h-4" />} 
+            onClick={exportAttendance}>
+            Export CSV
+          </Button>
+        )}
       </div>
 
       {/* Records Table */}
@@ -180,7 +230,7 @@ export default function Attendance() {
           <table className="w-full">
             <thead>
               <tr className="bg-zinc-950 border-b border-zinc-800">
-                <th className="text-left px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Employee</th>
+                <th className="text-left px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{isEmployee ? 'Type' : 'Employee'}</th>
                 <th className="text-left px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider hidden sm:table-cell">Department</th>
                 <th className="text-left px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Check In</th>
                 <th className="text-left px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Check Out</th>
@@ -195,10 +245,14 @@ export default function Attendance() {
                   <tr key={record.id} className="hover:bg-zinc-800/30 transition-all group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 text-[10px] font-bold">
-                          {record.employeeName.split(' ').map((n) => n[0]).join('')}
-                        </div>
-                        <span className="text-sm font-bold text-white group-hover:text-primary-400 transition-colors">{record.employeeName}</span>
+                        {!isEmployee && (
+                          <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 text-[10px] font-bold">
+                            {record.employeeName.split(' ').map((n) => n[0]).join('')}
+                          </div>
+                        )}
+                        <span className="text-sm font-bold text-white group-hover:text-primary-400 transition-colors">
+                          {isEmployee ? record.status.toUpperCase() : record.employeeName}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-medium text-zinc-500 hidden sm:table-cell">{record.department}</td>
@@ -239,5 +293,3 @@ export default function Attendance() {
     </div>
   );
 }
-
-

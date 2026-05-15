@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, Mail, Lock, User as UserIcon, ArrowRight, ArrowLeft, Shield, Users, Briefcase, Fingerprint } from 'lucide-react';
+import { Zap, Mail, Lock, User as UserIcon, ArrowRight, ArrowLeft, Shield, Users, Briefcase, Building2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../utils/cn';
 
@@ -9,7 +9,8 @@ export default function Signup({ onBackToLogin }) {
     name: '',
     email: '',
     password: '',
-    role: 'employee'
+    role: 'employee',
+    company_name: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -21,6 +22,7 @@ export default function Signup({ onBackToLogin }) {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email format';
     if (!formData.password) newErrors.password = 'Password required';
     else if (formData.password.length < 6) newErrors.password = 'Minimum length not met (min 6)';
+    if (formData.role === 'hr_admin' && !formData.company_name) newErrors.company_name = 'Company name required for admins';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -31,7 +33,7 @@ export default function Signup({ onBackToLogin }) {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    const success = await signup(formData.name, formData.email, formData.password, formData.role);
+    const success = await signup(formData.name, formData.email, formData.password, formData.role, formData.company_name);
     setIsLoading(false);
     if (success) {
       dispatch({ type: 'SET_SHOW_LANDING', payload: false });
@@ -111,6 +113,23 @@ export default function Signup({ onBackToLogin }) {
                   </div>
                   {errors.password && <p className="text-[10px] text-red-500 ml-1 font-bold">{errors.password}</p>}
                 </div>
+
+                {formData.role === 'hr_admin' && (
+                  <div className="space-y-1.5 animate-slide-in">
+                    <label className="text-xs font-bold text-zinc-400 ml-1">Company Name</label>
+                    <div className="relative group">
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-primary-500 transition-colors" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="Your organization name"
+                        className="w-full pl-11 pr-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-sm font-medium text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all placeholder:text-zinc-700"
+                        value={formData.company_name}
+                        onChange={(e) => setFormData({ ...formData, company_name: e.target.value })} />
+                    </div>
+                    {errors.company_name && <p className="text-[10px] text-red-500 ml-1 font-bold">{errors.company_name}</p>}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">

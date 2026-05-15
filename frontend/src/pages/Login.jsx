@@ -34,6 +34,7 @@ export default function Login({ onGoToSignup }) {
   };
 
   const roles = [
+    { id: 'super_admin', name: 'Super', icon: Fingerprint },
     { id: 'hr_admin', name: 'Admin', icon: Shield },
     { id: 'manager', name: 'Manager', icon: Briefcase },
     { id: 'employee', name: 'Employee', icon: Users }

@@ -38,18 +38,7 @@ export default function Payroll() {
   const handleProcessPayroll = (id) => {
     dispatch({ type: 'PROCESS_PAYROLL', payload: id });
     const record = payroll.find((p) => p.id === id);
-    showToast('success', 'Payroll Processed', `Payroll for ${record?.employeeName} has been processed.`);
-    dispatch({
-      type: 'ADD_NOTIFICATION',
-      payload: {
-        id: Date.now().toString(),
-        title: 'Payroll Processed',
-        message: `${record?.employeeName}'s payroll has been processed for ${selectedMonth}.`,
-        type: 'success',
-        read: false,
-        timestamp: new Date().toISOString()
-      }
-    });
+    showToast('success', 'Payroll Processed', `${record?.employeeName}'s payroll has been processed for ${selectedMonth}.`, 'update');
   };
 
   const handleProcessAll = () => {

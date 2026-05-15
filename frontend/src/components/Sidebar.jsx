@@ -1,50 +1,168 @@
-import { LayoutDashboard, Users, Clock, CalendarDays, CalendarClock, DollarSign, UserPlus, Target, Package, HelpCircle, BarChart3, Settings, ChevronLeft, ChevronRight, Zap, X, Bell, CheckSquare } from
-'lucide-react'; 
+import { 
+  LayoutDashboard, Users, Clock, CalendarDays, CalendarClock, DollarSign, 
+  UserPlus, Target, Package, HelpCircle, BarChart3, Settings, 
+  ChevronLeft, ChevronRight, Zap, X, Bell, CheckSquare,
+  Building, Database, ShieldCheck, Activity, CreditCard, Ticket, FileText
+} from 'lucide-react'; 
 
 import { cn } from '../utils/cn';
 import { useApp } from '../context/AppContext';
 
-const menuSections = [
-  {
-    title: 'Core',
-    items: [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'notifications', label: 'Notifications', icon: Bell },
-    ]
-  },
-  {
-    title: 'Management',
-    items: [
-      { id: 'employees', label: 'Employees', icon: Users },
-      { id: 'attendance', label: 'Attendance', icon: Clock },
-      { id: 'leaves', label: 'Leaves', icon: CalendarDays },
-      { id: 'shifts', label: 'Shifts', icon: CalendarClock },
-      { id: 'tasks', label: 'Task Manager', icon: CheckSquare },
-    ]
-  },
-  {
-    title: 'Finance & Planning',
-    items: [
-      { id: 'payroll', label: 'Payroll', icon: DollarSign },
-      { id: 'recruitment', label: 'Recruitment', icon: UserPlus },
-      { id: 'performance', label: 'Performance', icon: Target },
-      { id: 'reports', label: 'Reports', icon: BarChart3 },
-    ]
-  },
-  {
-    title: 'Resources',
-    items: [
-      { id: 'assets', label: 'Assets', icon: Package },
-      { id: 'helpdesk', label: 'Help Desk', icon: HelpCircle },
-    ]
-  },
-  {
-    title: 'System',
-    items: [
-      { id: 'settings', label: 'Settings', icon: Settings }
-    ]
-  }
-];
+const roleMenus = {
+  hr_admin: [
+    {
+      title: 'Core',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+      ]
+    },
+    {
+      title: 'Management',
+      items: [
+        { id: 'employees', label: 'Employee Management', icon: Users },
+        { id: 'attendance', label: 'Attendance', icon: Clock },
+        { id: 'leaves', label: 'Leave Management', icon: CalendarDays },
+        { id: 'shifts', label: 'Shifts', icon: CalendarClock },
+        { id: 'tasks', label: 'Workflow Automation', icon: CheckSquare },
+      ]
+    },
+    {
+      title: 'Finance & Planning',
+      items: [
+        { id: 'payroll', label: 'Payroll', icon: DollarSign },
+        { id: 'recruitment', label: 'Recruitment', icon: UserPlus },
+        { id: 'performance', label: 'Performance', icon: Target },
+        { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
+      ]
+    },
+    {
+      title: 'Resources',
+      items: [
+        { id: 'assets', label: 'Asset Management', icon: Package },
+        { id: 'helpdesk', label: 'Help Desk', icon: HelpCircle },
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { id: 'settings', label: 'Organization Settings', icon: Settings }
+      ]
+    }
+  ],
+  manager: [
+    {
+      title: 'Core',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+      ]
+    },
+    {
+      title: 'Team Management',
+      items: [
+        { id: 'employees', label: 'Team Members', icon: Users },
+        { id: 'attendance', label: 'Attendance', icon: Clock },
+        { id: 'leaves', label: 'Leave Approvals', icon: CalendarDays },
+        { id: 'tasks', label: 'Team Tasks', icon: CheckSquare },
+      ]
+    },
+    {
+      title: 'Planning',
+      items: [
+        { id: 'performance', label: 'Team Performance', icon: Target },
+        { id: 'reports', label: 'Team Reports', icon: BarChart3 },
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { id: 'settings', label: 'Profile Settings', icon: Settings }
+      ]
+    }
+  ],
+  employee: [
+    {
+      title: 'Core',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+      ]
+    },
+    {
+      title: 'Self Service',
+      items: [
+        { id: 'attendance', label: 'My Attendance', icon: Clock },
+        { id: 'leaves', label: 'Apply Leave', icon: CalendarDays },
+        { id: 'payroll', label: 'My Payroll', icon: DollarSign },
+        { id: 'tasks', label: 'My Tasks', icon: CheckSquare },
+      ]
+    },
+    {
+      title: 'Growth',
+      items: [
+        { id: 'performance', label: 'My Performance', icon: Target },
+      ]
+    },
+    {
+      title: 'Resources',
+      items: [
+        { id: 'helpdesk', label: 'Help Desk', icon: HelpCircle },
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { id: 'settings', label: 'Profile Settings', icon: Settings }
+      ]
+    }
+  ],
+  super_admin: [
+    {
+      title: 'Core',
+      items: [
+        { id: 'super-admin-dashboard', label: 'Global Dashboard', icon: LayoutDashboard },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+      ]
+    },
+    {
+      title: 'SaaS Management',
+      items: [
+        { id: 'organizations', label: 'Organizations', icon: Building },
+        { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
+        { id: 'billing', label: 'Billing & Revenue', icon: DollarSign },
+      ]
+    },
+    {
+      title: 'Platform Analytics',
+      items: [
+        { id: 'analytics', label: 'Usage Insights', icon: BarChart3 },
+        { id: 'reports', label: 'Global Reports', icon: FileText },
+      ]
+    },
+    {
+      title: 'System & Security',
+      items: [
+        { id: 'monitoring', label: 'System Health', icon: Activity },
+        { id: 'database', label: 'Database', icon: Database },
+        { id: 'audit-logs', label: 'Audit Logs', icon: ShieldCheck },
+      ]
+    },
+    {
+      title: 'Support',
+      items: [
+        { id: 'tickets', label: 'Support Tickets', icon: Ticket },
+        { id: 'help', label: 'Documentation', icon: HelpCircle },
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { id: 'settings', label: 'Platform Settings', icon: Settings }
+      ]
+    }
+  ]
+};
 
 
 export default function Sidebar() {
@@ -70,6 +188,8 @@ export default function Sidebar() {
   };
 
 
+  const menuSections = roleMenus[currentUser?.role] || roleMenus.employee;
+
   return (
     <>
       {mobileMenuOpen &&
@@ -91,12 +211,18 @@ export default function Sidebar() {
           sidebarCollapsed ? 'justify-center' : 'justify-between'
         )}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-primary-500 to-violet-600 flex items-center justify-center shadow-xl shadow-primary-500/20 active:scale-90 transition-transform cursor-pointer">
-              <Zap className="w-5 h-5 text-white fill-white/20" />
+            <div className="w-9 h-9 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shadow-xl overflow-hidden active:scale-90 transition-transform cursor-pointer group">
+              {currentUser?.organization?.logo ? (
+                <img src={currentUser.organization.logo} alt="" className="w-full h-full object-contain p-1" />
+              ) : (
+                <Zap className="w-5 h-5 text-indigo-500 fill-indigo-500/20 group-hover:scale-110 transition-transform" />
+              )}
             </div>
             {!sidebarCollapsed &&
             <div className="animate-fade-in">
-                <h1 className="text-lg font-bold text-white">DMS <span className="text-primary-500">HRMS</span></h1>
+                <h1 className="text-lg font-bold text-white text-ellipsis overflow-hidden whitespace-nowrap">
+                  {currentUser?.organization?.company_name || state.settings?.company_name || 'DMS HRMS'}
+                </h1>
                 <p className="text-[10px] text-zinc-500 font-medium">HR Management</p>
               </div>
             }
@@ -170,8 +296,12 @@ export default function Sidebar() {
         {currentUser &&
         <div className={cn("p-4 border-t border-zinc-900/50 bg-zinc-950/50", sidebarCollapsed ? "flex justify-center" : "")}>
             <div className={cn("flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/30 border border-zinc-800/50 group hover:border-zinc-700 transition-colors cursor-pointer", sidebarCollapsed ? "w-12 h-12 p-0 justify-center" : "")}>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-black shadow-lg group-hover:rotate-6 transition-transform">
-                {currentUser.name.split(' ').map((n) => n[0]).join('')}
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-black shadow-lg group-hover:rotate-6 transition-transform overflow-hidden">
+                {currentUser?.avatar ? (
+                  <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  currentUser.name.split(' ').map((n) => n[0]).join('')
+                )}
               </div>
               {!sidebarCollapsed && (
                 <div className="flex-1 min-w-0">

@@ -1,11 +1,11 @@
 import { 
   Building2, Shield, Bell, Plug, Globe, Palette, Save, 
   Moon, ChevronRight, CheckCircle2, Mail, Smartphone,
-  Monitor, Lock, Layout, Zap
+  Monitor, Lock, Layout, Zap, Camera, MapPin, Clock
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useApp, api } from '../context/AppContext';
 import { cn } from '../utils/cn';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button, FormInput } from '../components/FormInput';
 
 const settingSections = [
@@ -17,62 +17,178 @@ const settingSections = [
 ];
 
 export default function Settings() {
-  const { state, showToast, updateSettings } = useApp();
+  const { state, dispatch, showToast, updateSettings } = useApp();
+  const currentUser = state.currentUser;
+  const role = currentUser?.role || 'employee';
+
+  const filteredSections = settingSections.filter(section => {
+    if (role === 'employee') return ['notifications', 'access'].includes(section.id);
+    if (role === 'manager') return ['notifications', 'access', 'organization'].includes(section.id);
+    return true; // hr_admin sees everything
+  });
+
   const [activeSection, setActiveSection] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
 
   // Unified settings state
   const [localSettings, setLocalSettings] = useState(state.settings);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Organization settings state
+  const [orgSettings, setOrgSettings] = useState({
+    company_name: currentUser?.organization?.company_name || '',
+    website: currentUser?.organization?.website || '',
+    address: currentUser?.organization?.address || '',
+    city: currentUser?.organization?.city || '',
+    state: currentUser?.organization?.state || '',
+    country: currentUser?.organization?.country || '',
+    zip_code: currentUser?.organization?.zip_code || '',
+    registration_number: currentUser?.organization?.registration_number || '',
+    tax_id: currentUser?.organization?.tax_id || '',
+    phone: currentUser?.organization?.phone || '',
+    email: currentUser?.organization?.email || '',
+  });
+  const [isOrgLogoUploading, setIsOrgLogoUploading] = useState(false);
+
+  // Sync local state once global state is fetched
+  useEffect(() => {
+    if (Object.keys(state.settings).length > 0 && !hasInitialized) {
+      setLocalSettings(state.settings);
+      setHasInitialized(true);
+    }
+  }, [state.settings, hasInitialized]);
 
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    await updateSettings(localSettings);
-    setIsSaving(false);
+    try {
+      if (filteredSections[activeSection].id === 'organization') {
+        await api.post('/api/organization/profile', orgSettings);
+        dispatch({
+          type: 'SET_DATA',
+          payload: {
+            currentUser: {
+              ...currentUser,
+              organization: {
+                ...currentUser.organization,
+                ...orgSettings
+              }
+            }
+          }
+        });
+        showToast('success', 'Organization updated', 'Company details have been saved.');
+      } else {
+        await updateSettings(localSettings);
+      }
+    } catch (err) {
+      showToast('error', 'Update failed', err.response?.data?.detail || 'Could not save changes.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const updateSetting = (key, value) => {
     setLocalSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const updateOrgSetting = (key, value) => {
+    setOrgSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('error', 'File too large', 'Please upload an image smaller than 2MB.');
+      return;
+    }
+
+    setIsOrgLogoUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const base64String = reader.result;
+        const response = await api.post('/api/organization/logo', { logo: base64String });
+
+        if (response.data) {
+          dispatch({
+            type: 'SET_DATA',
+            payload: { 
+              currentUser: { 
+                ...currentUser, 
+                organization: { ...currentUser.organization, logo: base64String } 
+              } 
+            }
+          });
+          showToast('success', 'Logo updated', 'Organization logo has been updated.');
+        }
+      } catch (err) {
+        showToast('error', 'Upload failed', err.response?.data?.detail || 'Could not save organization logo.');
+      } finally {
+        setIsOrgLogoUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const renderSectionContent = () => {
-    const section = settingSections[activeSection];
+    const section = filteredSections[activeSection];
+    if (!section) return null;
 
     switch (section.id) {
       case 'organization':
         return (
           <div className="space-y-8 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormInput
-                label="Company name"
-                value={localSettings.company_name}
-                onChange={(v) => updateSetting('company_name', v)}
-              />
-              <FormInput
-                label="Company website"
-                value={localSettings.website || ''}
-                onChange={(v) => updateSetting('website', v)}
-                placeholder="https://example.com"
-              />
+            <div className="flex items-center gap-6 pb-6 border-b border-zinc-800">
+              <div className="relative group">
+                <div className="w-20 h-20 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden shadow-lg">
+                  {currentUser?.organization?.logo ? (
+                    <img src={currentUser.organization.logo} alt="" className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <Building2 className="w-10 h-10 text-zinc-700" />
+                  )}
+                  {isOrgLogoUploading && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <label className="absolute -bottom-2 -right-2 w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-white cursor-pointer hover:bg-zinc-700 transition-all shadow-xl">
+                  <Camera className="w-4 h-4" />
+                  <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} disabled={isOrgLogoUploading} />
+                </label>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Company Logo</h3>
+                <p className="text-xs text-zinc-500 mt-1">Update your organization's primary logo (Max 2MB)</p>
+              </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput label="Company Name" value={orgSettings.company_name} onChange={(v) => updateOrgSetting('company_name', v)} required />
+              <FormInput label="Company Website" value={orgSettings.website} onChange={(v) => updateOrgSetting('website', v)} placeholder="https://example.com" />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-zinc-800">
-              <FormInput
-                label="Street address"
-                value={localSettings.address || ''}
-                onChange={(v) => updateSetting('address', v)}
-                placeholder="123 Business St"
-              />
+              <FormInput label="Company Email" value={orgSettings.email} onChange={(v) => updateOrgSetting('email', v)} placeholder="contact@company.com" />
+              <FormInput label="Company Phone" value={orgSettings.phone} onChange={(v) => updateOrgSetting('phone', v)} placeholder="+1-555-0199" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-zinc-800">
+              <FormInput label="Registration Number" value={orgSettings.registration_number} onChange={(v) => updateOrgSetting('registration_number', v)} placeholder="REG-123456" />
+              <FormInput label="Tax ID / VAT" value={orgSettings.tax_id} onChange={(v) => updateOrgSetting('tax_id', v)} placeholder="TAX-789012" />
+            </div>
+
+            <div className="space-y-6 pt-6 border-t border-zinc-800">
+              <FormInput label="Street Address" value={orgSettings.address} onChange={(v) => updateOrgSetting('address', v)} placeholder="123 Business St" />
               <div className="grid grid-cols-2 gap-4">
-                <FormInput
-                  label="City"
-                  value={localSettings.city || ''}
-                  onChange={(v) => updateSetting('city', v)}
-                />
-                <FormInput
-                  label="State"
-                  value={localSettings.state || ''}
-                  onChange={(v) => updateSetting('state', v)}
-                />
+                <FormInput label="City" value={orgSettings.city} onChange={(v) => updateOrgSetting('city', v)} placeholder="City" />
+                <FormInput label="State/Province" value={orgSettings.state} onChange={(v) => updateOrgSetting('state', v)} placeholder="State" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormInput label="Country" value={orgSettings.country} onChange={(v) => updateOrgSetting('country', v)} placeholder="Country" />
+                <FormInput label="Zip/Postal Code" value={orgSettings.zip_code} onChange={(v) => updateOrgSetting('zip_code', v)} placeholder="12345" />
               </div>
             </div>
           </div>
@@ -144,14 +260,14 @@ export default function Settings() {
         return (
           <div className="space-y-6 animate-fade-in">
             {[
-              { id: 'gps_attendance', label: 'GPS attendance', desc: 'Mark attendance only from office', icon: MapPin },
+              { id: 'gps_attendance', label: 'GPS attendance', desc: 'Mark attendance only from office', icon: Globe },
               { id: 'auto_gen_id', label: 'Auto employee ID', desc: 'Generate IDs automatically', icon: Zap },
               { id: 'self_onboarding', label: 'Self onboarding', desc: 'Allow employees to fill details', icon: UserPlus },
             ].map(item => (
               <div key={item.id} className="flex items-center justify-between p-5 bg-zinc-950 rounded-2xl border border-zinc-800">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-500">
-                    <item.icon className={cn("w-5 h-5", item.id === 'gps_attendance' ? 'lucide-map-pin' : '')} />
+                    <item.icon className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-white">{item.label}</p>
@@ -211,8 +327,7 @@ export default function Settings() {
     }
   };
 
-  const MapPin = ({className}) => <Globe className={className} />;
-  const UserPlus = ({className}) => <Layout className={className} />;
+  const canManage = ['super_admin', 'hr_admin', 'admin'].includes(state.currentUser?.role) || state.currentUser?.permissions?.includes('settings.manage');
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
@@ -221,18 +336,24 @@ export default function Settings() {
           <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
           <p className="text-sm text-zinc-500 mt-1">Configure system parameters and company profile.</p>
         </div>
-        <Button 
-          className="h-11 px-8 rounded-xl text-xs font-bold bg-primary-600 hover:bg-primary-500 border-0"
-          onClick={handleSave}
-          disabled={isSaving}
-          icon={isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}>
-          Save changes
-        </Button>
+        <div className="flex flex-col items-end gap-2">
+          <Button 
+            className={cn(
+              "h-11 px-8 rounded-xl text-xs font-bold border-0",
+              canManage ? "bg-primary-600 hover:bg-primary-500" : "bg-zinc-800 cursor-not-allowed opacity-50"
+            )}
+            onClick={canManage ? handleSave : () => showToast('error', 'Access Denied', 'You do not have permission to modify settings.')}
+            disabled={isSaving}
+            icon={isSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}>
+            Save changes
+          </Button>
+          {!canManage && <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">View-only mode</p>}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-4 space-y-3">
-          {settingSections.map((section, idx) => {
+          {filteredSections.map((section, idx) => {
             const Icon = section.icon;
             const isActive = activeSection === idx;
             return (
@@ -264,17 +385,21 @@ export default function Settings() {
         </div>
 
         <div className="lg:col-span-8 bg-zinc-900 rounded-[2.5rem] border border-zinc-800 p-8 lg:p-10 shadow-2xl min-h-[600px]">
-          <div className="flex items-center gap-4 mb-10 pb-6 border-b border-zinc-800/50">
-            <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center border', settingSections[activeSection].bg, settingSections[activeSection].color, settingSections[activeSection].border)}>
-              {(() => {const Icon = settingSections[activeSection].icon; return <Icon className="w-6 h-6" />;})()}
-            </div>
-            <div>
-              <h4 className="text-xl font-bold text-white">{settingSections[activeSection].title} settings</h4>
-              <p className="text-xs text-zinc-500 mt-0.5">Customize your workspace experience.</p>
-            </div>
-          </div>
+          {filteredSections[activeSection] && (
+            <>
+              <div className="flex items-center gap-4 mb-10 pb-6 border-b border-zinc-800/50">
+                <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center border', filteredSections[activeSection].bg, filteredSections[activeSection].color, filteredSections[activeSection].border)}>
+                  {(() => {const Icon = filteredSections[activeSection].icon; return <Icon className="w-6 h-6" />;})()}
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-white">{filteredSections[activeSection].title} settings</h4>
+                  <p className="text-xs text-zinc-500 mt-0.5">Customize your workspace experience.</p>
+                </div>
+              </div>
 
-          {renderSectionContent()}
+              {renderSectionContent()}
+            </>
+          )}
         </div>
       </div>
     </div>

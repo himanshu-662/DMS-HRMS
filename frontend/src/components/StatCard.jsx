@@ -1,15 +1,5 @@
 import { cn } from '../utils/cn';
-
 import { TrendingUp, TrendingDown } from 'lucide-react';
-
-
-
-
-
-
-
-
-
 
 const colorMap = {
   blue: { bg: 'bg-blue-500/10', icon: 'text-blue-500' },
@@ -27,31 +17,31 @@ export default function StatCard({ title, value, change, icon: Icon, color = 'bl
   const colors = colorMap[color] || colorMap.blue;
 
   return (
-    <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 shadow-xl group">
+    <div className="glass-executive luminous-stroke p-6 group transition-all duration-300 hover:-translate-y-1">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-xs font-medium text-zinc-500">{title}</p>
-          <p className="text-3xl font-bold text-white mt-2 tracking-tight">{value}</p>
-          {change !== undefined &&
-          <div className="flex items-center gap-1.5 mt-3">
-              {change >= 0 ?
-            <TrendingUp className="w-4 h-4 text-emerald-500" /> :
-            <TrendingDown className="w-4 h-4 text-rose-500" />
-            }
-              <span className={cn('text-xs font-bold', change >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
+          <p className="text-sm font-black text-zinc-500 uppercase tracking-widest">{title}</p>
+          <p className="text-3xl font-black text-white mt-3 tracking-tighter">{value}</p>
+          {change !== undefined && (
+            <div className="flex items-center gap-1.5 mt-4">
+              <div className={cn(
+                "flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-black uppercase tracking-tight",
+                change >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+              )}>
+                {change >= 0 ? <TrendingUp className="w-4 h-4" strokeWidth={2.5} /> : <TrendingDown className="w-4 h-4" strokeWidth={2.5} />}
                 {change >= 0 ? '+' : ''}{change}%
-              </span>
-              <span className="text-[10px] font-medium text-zinc-600">vs last month</span>
+              </div>
+              <span className="text-sm font-bold text-zinc-600 uppercase tracking-widest">vs last month</span>
             </div>
-          }
-          {subtitle &&
-          <p className="text-[10px] font-medium text-zinc-500 mt-2">{subtitle}</p>
-          }
+          )}
+          {subtitle && (
+            <p className="text-sm font-bold text-zinc-500 mt-3 uppercase tracking-wide opacity-60">{subtitle}</p>
+          )}
         </div>
-        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', colors.bg)}>
-          <Icon className={cn('w-6 h-6', colors.icon)} />
+        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500', colors.bg)}>
+          <Icon className={cn('w-6 h-6', colors.icon)} strokeWidth={1.5} />
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }

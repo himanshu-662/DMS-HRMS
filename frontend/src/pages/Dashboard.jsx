@@ -37,23 +37,216 @@ export default function Dashboard() {
 
   const handleApproveLeave = (id) => {
     dispatch({ type: 'APPROVE_LEAVE', payload: id });
-    dispatch({
-      type: 'ADD_NOTIFICATION',
-      payload: {
-        id: Date.now().toString(),
-        title: 'Leave approved',
-        message: 'Leave request has been approved successfully.',
-        type: 'success',
-        read: false,
-        timestamp: new Date().toISOString()
-      }
-    });
+    showToast('success', 'Leave Approved', 'The leave request has been approved successfully.', 'update');
   };
 
   const handleRejectLeave = (id) => {
     dispatch({ type: 'REJECT_LEAVE', payload: id });
+    showToast('warning', 'Leave Rejected', 'The leave request has been rejected.', 'alert');
   };
 
+  const role = state.currentUser?.role || 'employee';
+
+  if (role === 'employee') {
+    return (
+      <div className="space-y-8 animate-fade-in pb-12">
+        {/* Employee Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard title="Attendance status" value="Present" icon={UserCheck} trend="Today" color="emerald" />
+          <StatCard title="Leave balance" value="12 Days" icon={Calendar} trend="Annual" color="indigo" />
+          <StatCard title="My tasks" value={tasks.filter(t => t.status !== 'completed').length} icon={CheckSquare} trend="Active" color="orange" />
+          <StatCard title="Next payday" value="25 Nov" icon={DollarSign} trend="Upcoming" color="violet" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-8 space-y-8">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-8">My Performance Trend</h3>
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={[
+                    { name: 'Jul', value: 85 },
+                    { name: 'Aug', value: 88 },
+                    { name: 'Sep', value: 92 },
+                    { name: 'Oct', value: 90 },
+                    { name: 'Nov', value: 95 }
+                  ]}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#18181b" vertical={false} />
+                    <XAxis dataKey="name" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '12px' }}
+                      itemStyle={{ fontSize: '10px', fontWeight: 'bold' }}
+                    />
+                    <Area type="monotone" dataKey="value" stroke="#6366F1" fillOpacity={1} fill="url(#colorValue)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-8">Upcoming Holidays</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { name: 'Thanksgiving', date: 'Nov 28, 2024', day: 'Thursday' },
+                  { name: 'Christmas Day', date: 'Dec 25, 2024', day: 'Wednesday' }
+                ].map(h => (
+                  <div key={h.name} className="p-4 bg-zinc-950/50 rounded-2xl border border-zinc-800 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">{h.name}</p>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">{h.date} • {h.day}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar Content */}
+          <div className="lg:col-span-4 space-y-8">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-8">Quick Actions</h3>
+              <div className="space-y-3">
+                <button onClick={() => navigateTo('leaves')} className="w-full p-4 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-2xl flex items-center gap-4 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-400 group-hover:text-white uppercase tracking-widest">Apply Leave</span>
+                </button>
+                <button onClick={() => navigateTo('attendance')} className="w-full p-4 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-2xl flex items-center gap-4 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-400 group-hover:text-white uppercase tracking-widest">Mark Attendance</span>
+                </button>
+                <button onClick={() => navigateTo('payroll')} className="w-full p-4 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-2xl flex items-center gap-4 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-500 group-hover:scale-110 transition-transform">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-400 group-hover:text-white uppercase tracking-widest">View Payslip</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-8">Pending Tasks</h3>
+              <div className="space-y-4">
+                {tasks.filter(t => t.status !== 'completed').slice(0, 3).map(task => (
+                  <div key={task.id} className="flex items-center gap-4 p-3 bg-zinc-950/50 rounded-2xl border border-zinc-800">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
+                      <CheckSquare className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold text-white truncate">{task.title}</p>
+                      <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">Due: {task.dueDate}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (role === 'manager') {
+    return (
+      <div className="space-y-8 animate-fade-in pb-12">
+        {/* Manager Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard title="Team size" value={employees.length} icon={Users} trend="Direct Reports" color="indigo" />
+          <StatCard title="Team present" value={todayPresent} icon={UserCheck} trend="Today" color="emerald" />
+          <StatCard title="Pending leaves" value={pendingLeaves.length} icon={CalendarClock} trend="Action Required" color="orange" />
+          <StatCard title="Tasks open" value={tasks.filter(t => t.status !== 'completed').length} icon={CheckSquare} trend="Current Week" color="violet" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column */}
+          <div className="space-y-8">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Leave Approvals</h3>
+                <button onClick={() => navigateTo('leaves')} className="text-[10px] font-bold text-primary-500 uppercase tracking-widest">View All</button>
+              </div>
+              <div className="space-y-4">
+                {pendingLeaves.length === 0 ? (
+                  <div className="py-12 text-center border border-dashed border-zinc-800 rounded-2xl">
+                    <CheckCircle2 className="w-10 h-10 text-zinc-800 mx-auto mb-4" />
+                    <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No pending requests</p>
+                  </div>
+                ) : (
+                  pendingLeaves.slice(0, 3).map((leave) => (
+                    <div key={leave.id} className="p-5 bg-zinc-950/50 rounded-2xl border border-zinc-800 group hover:border-zinc-700 transition-all">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white text-xs font-black uppercase">
+                            {leave?.employeeName?.split(' ').map((n) => n[0]).join('') || '?'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white">{leave?.employeeName || 'Unknown'}</p>
+                            <p className="text-[10px] text-zinc-500 uppercase mt-0.5">{leave?.type || 'General'}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-bold text-white">{leave.days} days</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleApproveLeave(leave.id)} className="flex-1 py-2 bg-emerald-600/10 text-emerald-500 text-[10px] font-bold rounded-lg border border-emerald-600/20 uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all">Approve</button>
+                        <button onClick={() => handleRejectLeave(leave.id)} className="flex-1 py-2 bg-rose-600/10 text-rose-500 text-[10px] font-bold rounded-lg border border-rose-600/20 uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all">Reject</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-8">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Team Productivity</h3>
+                <TrendingUp className="w-5 h-5 text-zinc-500" />
+              </div>
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={[
+                    { name: 'Week 1', value: 78 },
+                    { name: 'Week 2', value: 85 },
+                    { name: 'Week 3', value: 82 },
+                    { name: 'Week 4', value: 90 }
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#18181b" vertical={false} />
+                    <XAxis dataKey="name" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '12px' }}
+                      itemStyle={{ fontSize: '10px', fontWeight: 'bold' }}
+                    />
+                    <Bar dataKey="value" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin Dashboard (Default)
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Top Stats */}

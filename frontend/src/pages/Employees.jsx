@@ -9,7 +9,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { FormInput, FormSelect, Button, FormCheckbox } from '../components/FormInput';
 
-import axios from 'axios';
+import { api } from '../context/AppContext';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -91,7 +91,7 @@ export default function Employees() {
     dispatch({ type: 'SET_DATA', payload: { employees: updatedEmployees } });
 
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/employees/update/${employeeId}`, {
+      await api.post(`/api/employees/update/${employeeId}`, {
         ...employee,
         department: newDepartment
       });
@@ -119,10 +119,10 @@ export default function Employees() {
     try {
       const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       if (isEditing && selectedEmployee) {
-        await axios.post(`${baseUrl}/api/employees/update/${selectedEmployee.id}`, formData);
+        await api.post(`/api/employees/update/${selectedEmployee.id}`, formData);
         showToast('success', 'Employee Updated', `${formData.name}'s profile has been updated.`);
       } else {
-        await axios.post(`${baseUrl}/api/employees`, formData);
+        await api.post(`/api/employees`, formData);
         showToast('success', 'Employee Added', `${formData.name} has been added to the team.`);
       }
       refreshData();
@@ -184,8 +184,7 @@ export default function Employees() {
           return;
         }
 
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const response = await axios.post(`${baseUrl}/api/employees/bulk`, normalizedData);
+        const response = await api.post(`/api/employees/bulk`, normalizedData);
         showToast('success', 'Import Complete', response.data.message);
         refreshData();
         setShowImportModal(false);
@@ -242,13 +241,12 @@ export default function Employees() {
   const handleDelete = async () => {
     if (selectedEmployee) {
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        await axios.delete(`${baseUrl}/api/employees/${selectedEmployee.id}`);
+        await api.delete(`/api/employees/${selectedEmployee.id}`);
         showToast('success', 'Employee Removed', `${selectedEmployee.name} has been removed.`);
         refreshData();
         setSelectedEmployee(null);
       } catch (error) {
-        showToast('error', 'Delete Failed', 'Could not remove employee.');
+        showToast('error', 'Delete Failed', error.response?.data?.detail || 'Could not remove employee.');
       }
     }
   };
@@ -282,6 +280,8 @@ export default function Employees() {
     'from-cyan-500 to-blue-600'
   ];
 
+  const isAdmin = state.currentUser?.role === 'hr_admin';
+
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Header */}
@@ -291,9 +291,13 @@ export default function Employees() {
           <p className="text-sm text-zinc-500 mt-1">Manage your team and their roles across the organization.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-xs font-bold px-4" icon={<Upload className="w-4 h-4" />} onClick={() => setShowImportModal(true)}>Import</Button>
-          <Button variant="ghost" className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-xs font-bold px-4" icon={<Download className="w-4 h-4" />} onClick={exportToCSV}>Export</Button>
-          <Button className="bg-primary-600 hover:bg-primary-500 text-xs font-bold px-6 shadow-lg shadow-primary-900/20" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>Add Employee</Button>
+          {isAdmin && (
+            <>
+              <Button variant="ghost" className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-xs font-bold px-4" icon={<Upload className="w-4 h-4" />} onClick={() => setShowImportModal(true)}>Import</Button>
+              <Button variant="ghost" className="bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-xs font-bold px-4" icon={<Download className="w-4 h-4" />} onClick={exportToCSV}>Export</Button>
+              <Button className="bg-primary-600 hover:bg-primary-500 text-xs font-bold px-6 shadow-lg shadow-primary-900/20" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>Add Employee</Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -429,6 +433,18 @@ export default function Employees() {
       {/* Add/Edit Modal */}
       <Modal isOpen={showAddModal} onClose={handleCloseModal} title={isEditing ? 'Edit Employee' : 'Add New Employee'} subtitle={isEditing ? 'Update employee details.' : 'Fill in the details to add a new employee.'} size="lg" footer={<><Button variant="ghost" className="px-6" onClick={handleCloseModal}>Cancel</Button><Button className="bg-primary-600 px-8" onClick={handleSubmit}>{isEditing ? 'Save Changes' : 'Add Employee'}</Button></>}>
         <div className="space-y-6 p-2">
+          {!state.settings?.auto_gen_id && !isEditing && (
+            <div className="pb-6 border-b border-zinc-800">
+              <FormInput 
+                label="Employee ID" 
+                value={formData.employeeId || ''} 
+                onChange={(v) => setFormData({ ...formData, employeeId: v })} 
+                placeholder="e.g. DMS123" 
+                required 
+                error={errors.employeeId} 
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-6">
             <FormInput label="Full Name" value={formData.name} onChange={(v) => setFormData({ ...formData, name: v })} placeholder="e.g. John Doe" required error={errors.name} />
             <FormInput label="Email Address" type="email" value={formData.email} onChange={(v) => setFormData({ ...formData, email: v })} placeholder="e.g. john@company.com" required error={errors.email} />
