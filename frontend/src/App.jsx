@@ -14,6 +14,8 @@ import Shifts from './pages/Shifts';
 import Tasks from './pages/Tasks';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
+import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import OrganizationManagement from './pages/OrganizationManagement';
 import SystemHealth from './pages/SystemHealth';
@@ -122,22 +124,21 @@ function AppContent() {
       case 'settings': return <Settings />;
       case 'profile': return <Profile />;
       case 'notifications': return <Notifications />;
-      
+
       // Super Admin Pages
       case 'super-admin-dashboard': return <SuperAdminDashboard />;
       case 'organizations': return <OrganizationManagement />;
       case 'monitoring': return <SystemHealth />;
       case 'analytics': return <PlatformAnalytics />;
       case 'audit-logs': return <AuditLogs />;
-      
-      // Map other routes to relevant placeholders or existing pages for now
+
+      // Super Admin placeholder routes
       case 'subscriptions':
-      case 'billing':
-      case 'reports': return <Reports />;
+      case 'billing': return <Reports />;
       case 'database':
       case 'tickets':
       case 'help': return <HelpDesk />;
-      
+
       default: return role === 'super_admin' ? <SuperAdminDashboard /> : <Dashboard />;
     }
   };
